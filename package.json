@@ -1,0 +1,9 @@
+{
+  "name": "afk-bot",
+  "private": true,
+  "description": "FiveM AFK botas, kuris automatiškai atsako į AFK klausimą.",
+  "scripts": {
+    "test": "node --test tests/*.test.js",
+    "start": "node preview/server.js"
+  }
+}

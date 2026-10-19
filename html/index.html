@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="lt">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AFK buvimas</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div id="overlay" class="overlay is-hidden" role="dialog" aria-modal="true" aria-labelledby="title">
+      <form id="card" class="card" autocomplete="off">
+        <h1 id="title">AFK buvimas</h1>
+        <p id="prompt"></p>
+        <label class="field">
+          <span>Atsakymas</span>
+          <input
+            id="answer"
+            name="answer"
+            maxlength="48"
+            autocomplete="off"
+            spellcheck="false"
+            aria-label="Atsakymas"
+          />
+        </label>
+        <button id="confirm" type="submit">Patvirtinti</button>
+        <p id="status" class="status" aria-live="polite"></p>
+      </form>
+    </div>
+    <script src="solver.js"></script>
+    <script src="app.js"></script>
+    <script src="preview.js"></script>
+  </body>
+</html>
