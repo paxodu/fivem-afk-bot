@@ -3,6 +3,7 @@ node_modules/
 agent-tools/
 assets/
 .venv/
+.wine-py/
 build/
 dist/
 *.spec

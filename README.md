@@ -4,24 +4,30 @@ Programa, kuri stebi ekraną. Kai FiveM išlenda lenta **AFK buvimas** su klausi
 
 Langas būna viršutiniame dešiniajame kampe, kad neuždengtų lentos. **F8** pristabdo arba vėl įjungia stebėjimą.
 
-## Windows programa
+## Atsisiųsk AFKBot.exe
 
-Reikia [Tesseract OCR](https://github.com/UB-Mannheim/tesseract/wiki). Diegiant pažymėk **Lithuanian** kalbą.
+Python diegti nereikia. Atsisiųsk ir dukart spausk:
 
-Jei turi Python:
+[AFKBot.exe](https://github.com/paxodu/fivem-afk-bot/releases/download/v1.0.0/AFKBot.exe)
+
+FiveM laikyk lango režimu arba borderless, ne išskirtiniu viso ekrano režimu, kad programa matytų lentą. Windows gali paklausti, ar leisti programai valdyti pelę ir klaviatūrą — leisk.
+
+## Jei nori susikurti exe pats
+
+Reikia [Tesseract OCR](https://github.com/UB-Mannheim/tesseract/wiki). Diegiant pažymėk **Lithuanian** kalbą. Tada:
 
 ```bat
 py -3 -m pip install -r requirements.txt
 py -3 afkbot.py
 ```
 
-Exe failą susikuri vienu paspaudimu:
+Arba:
 
 ```bat
 build.bat
 ```
 
-Tada paleidi `dist\AFKBot.exe`. FiveM laikyk lango režimu arba borderless, ne išskirtiniu viso ekrano režimu, kad programa matytų lentą.
+Paruoštas failas bus `dist\AFKBot.exe`. Atsisiųstame exe Tesseract jau yra viduje, todėl atskirai jo diegti nereikia.
 
 ## Paleidimas čia
 

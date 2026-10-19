@@ -2,6 +2,7 @@
 
 import os
 import shutil
+import sys
 from dataclasses import dataclass
 
 import numpy as np
@@ -23,6 +24,26 @@ _WINDOWS_TESSERACT = (
 _TESSERACT_READY = None
 
 
+def _search_roots():
+    roots = []
+    if getattr(sys, "frozen", False):
+        roots.append(getattr(sys, "_MEIPASS", ""))
+        roots.append(os.path.dirname(sys.executable))
+    roots.append(os.path.dirname(os.path.abspath(__file__)))
+    return [root for root in roots if root]
+
+
+def _bundled_tesseract():
+    for root in _search_roots():
+        for candidate in (
+            os.path.join(root, "tesseract", "tesseract.exe"),
+            os.path.join(root, "tesseract.exe"),
+        ):
+            if os.path.isfile(candidate):
+                return candidate
+    return None
+
+
 def tesseract_ready():
     global _TESSERACT_READY
     if _TESSERACT_READY is not None:
@@ -30,10 +51,16 @@ def tesseract_ready():
     _TESSERACT_READY = False
     if pytesseract is None:
         return False
-    if os.name == "nt":
+
+    bundled = _bundled_tesseract()
+    if bundled:
+        pytesseract.pytesseract.tesseract_cmd = bundled
+        os.environ["TESSDATA_PREFIX"] = os.path.dirname(bundled)
+    elif os.name == "nt":
         for path in _WINDOWS_TESSERACT:
             if os.path.exists(path):
                 pytesseract.pytesseract.tesseract_cmd = path
+                os.environ.setdefault("TESSDATA_PREFIX", os.path.dirname(path))
                 break
     elif shutil.which("tesseract") is None:
         return False
