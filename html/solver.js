@@ -241,6 +241,11 @@ function prepare(text) {
     const repeat = original.match(/pakartok\s*[:\-]?\s*([^\s?.!,]+)/i);
     if (repeat) return repeat[1];
 
+    const labeledCode = original.match(/kod(?:ą|a)s?\s*[:\-]\s*([A-Za-z0-9]{2,16})/i);
+    if (labeledCode) return labeledCode[1];
+    const looseCode = original.match(/kod(?:ą|a)s?\s+([A-Za-z0-9]*\d[A-Za-z0-9]{1,15})/i);
+    if (looseCode) return looseCode[1];
+
     const math = mathFrom(text);
     if (math != null) return math;
 

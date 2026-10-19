@@ -67,6 +67,7 @@ class Memory:
     def __init__(self):
         self.last = None
         self.misses = 0
+        self.unsolved = None
 
     def _signature(self, panel):
         return (panel.answer, panel.x // 30, panel.y // 30)
@@ -105,7 +106,12 @@ def watch_once(log, should_stop, memory=None, pause=0.35):
     saw_panel = False
     for image, left, top in capture_frames():
         panel = locate(image)
-        if panel is None or not panel.answer:
+        if panel is None:
+            continue
+        if not panel.answer:
+            if memory.unsolved != panel.text:
+                memory.unsolved = panel.text
+                log(f"Matau lentą, bet neperskaičiau kodo: {panel.text}")
             continue
         saw_panel = True
         if not memory.should_answer(panel):

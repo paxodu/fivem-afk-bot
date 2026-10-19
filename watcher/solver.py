@@ -228,6 +228,25 @@ def _math_from(text):
     return None
 
 
+def _code_from(original):
+    """Serverio lenta rodo kodą, pvz. „įrašę šį kodą: 8136“."""
+    labeled = re.search(
+        r"kod(?:ą|a)s?\s*[:\-]\s*([A-Za-z0-9]{2,16})",
+        original,
+        re.IGNORECASE,
+    )
+    if labeled:
+        return labeled.group(1)
+    loose = re.search(
+        r"kod(?:ą|a)s?\s+([A-Za-z0-9]*\d[A-Za-z0-9]{1,15})",
+        original,
+        re.IGNORECASE,
+    )
+    if loose:
+        return loose.group(1)
+    return None
+
+
 def solve_afk_question(raw):
     if raw is None:
         return None
@@ -243,6 +262,10 @@ def solve_afk_question(raw):
     repeat = re.search(r"pakartok\s*[:\-]?\s*([^\s?.!,]+)", original, re.IGNORECASE)
     if repeat:
         return repeat.group(1)
+
+    code = _code_from(original)
+    if code:
+        return code
 
     math_answer = _math_from(text)
     if math_answer is not None:

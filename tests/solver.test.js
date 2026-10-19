@@ -36,6 +36,16 @@ test('lietuviški žodžiai', () => {
   );
 });
 
+test('serverio AFK kodas', () => {
+  assert.equal(
+    solveAfkQuestion(
+      'Jūs esate AFK, sugrįžti galite apačioje įrašę šį kodą: 8136'
+    ),
+    '8136'
+  );
+  assert.equal(solveAfkQuestion('Įrašykite šį kodą AB12'), 'AB12');
+});
+
 test('kiti šablonai', () => {
   assert.equal(solveAfkQuestion('Kiek raidžių yra žodyje „labas“?'), '5');
   assert.equal(solveAfkQuestion('Pakartok: Vilnius'), 'Vilnius');

@@ -34,6 +34,8 @@ class SolverTests(unittest.TestCase):
             "Pakartok: Vilnius",
             "Įrašykite skaičių 42",
             "Kiek bus 15?",
+            "Jūs esate AFK, sugrįžti galite apačioje įrašę šį kodą: 8136",
+            "Įrašykite šį kodą AB12",
             "",
             "Kas yra AFK?",
             "Kiek bus 8 / 0?",
@@ -86,6 +88,13 @@ class VisionTests(unittest.TestCase):
     def test_ignores_screen_without_panel(self):
         image = Image.new("RGB", (800, 500), (20, 20, 20))
         self.assertIsNone(locate(image))
+
+    def test_real_code_panel(self):
+        path = os.path.join(os.path.dirname(__file__), "fixtures", "code-panel.png")
+        panel = locate(Image.open(path))
+        self.assertIsNotNone(panel)
+        self.assertEqual(panel.answer, "8136")
+        self.assertIn("8136", panel.text)
 
     def test_real_preview_panel(self):
         path = os.path.join(os.path.dirname(__file__), "fixtures", "panel.png")

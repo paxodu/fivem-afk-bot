@@ -8,7 +8,7 @@ Langas būna viršutiniame dešiniajame kampe, kad neuždengtų lentos. **F8** p
 
 Python diegti nereikia. Atsisiųsk ir dukart spausk:
 
-[AFKBot.exe](https://github.com/paxodu/fivem-afk-bot/releases/download/v1.0.0/AFKBot.exe)
+[AFKBot.exe](https://github.com/paxodu/fivem-afk-bot/releases/download/v1.0.1/AFKBot.exe)
 
 FiveM laikyk lango režimu arba borderless, ne išskirtiniu viso ekrano režimu, kad programa matytų lentą. Windows gali paklausti, ar leisti programai valdyti pelę ir klaviatūrą — leisk.
 
