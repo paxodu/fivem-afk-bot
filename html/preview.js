@@ -5,6 +5,8 @@
   let round = 0;
   let expected = null;
   let auto = true;
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('auto') === '0') auto = false;
 
   document.body.classList.add('preview');
 
@@ -31,8 +33,8 @@
   nextButton.textContent = 'Naujas klausimas';
   const autoButton = document.createElement('button');
   autoButton.type = 'button';
-  autoButton.textContent = 'Botas įjungtas';
-  autoButton.setAttribute('aria-pressed', 'true');
+  autoButton.textContent = auto ? 'Botas įjungtas' : 'Botas išjungtas';
+  autoButton.setAttribute('aria-pressed', auto ? 'true' : 'false');
   const wrongButton = document.createElement('button');
   wrongButton.type = 'button';
   wrongButton.textContent = 'Atsakyti neteisingai';

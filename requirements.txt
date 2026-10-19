@@ -1,0 +1,6 @@
+pillow
+numpy
+mss
+pynput
+pytesseract
+pyinstaller

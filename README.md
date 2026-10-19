@@ -1,62 +1,50 @@
-# AFK botas (FiveM)
+# AFK botas
 
-FiveM resursas, kuris, kai žaidėjas stovi AFK, parodo klausimą ir **pats į jį atsako**.
+Programa, kuri stebi ekraną. Kai FiveM išlenda lenta **AFK buvimas** su klausimu, pavyzdžiui „Kiek bus 35 + 54?“, botas pats įrašo atsakymą ir paspaudžia **Patvirtinti**.
 
-Langas atrodo taip, kaip serverio AFK patikra: antraštė „AFK buvimas“, tekstas „Jūs esate AFK…“ ir klausimas, pavyzdžiui **Kiek bus 35 + 54?** Botas suskaičiuoja `89`, įrašo į lauką „Atsakymas“ ir paspaudžia **Patvirtinti**. Teisingą skaičių žino tik serveris. Klientas mato vien klausimo tekstą.
+Langas būna viršutiniame dešiniajame kampe, kad neuždengtų lentos. **F8** pristabdo arba vėl įjungia stebėjimą.
 
-## Peržiūra naršyklėje
+## Windows programa
+
+Reikia [Tesseract OCR](https://github.com/UB-Mannheim/tesseract/wiki). Diegiant pažymėk **Lithuanian** kalbą.
+
+Jei turi Python:
+
+```bat
+py -3 -m pip install -r requirements.txt
+py -3 afkbot.py
+```
+
+Exe failą susikuri vienu paspaudimu:
+
+```bat
+build.bat
+```
+
+Tada paleidi `dist\AFKBot.exe`. FiveM laikyk lango režimu arba borderless, ne išskirtiniu viso ekrano režimu, kad programa matytų lentą.
+
+## Paleidimas čia
+
+```bash
+python3 -m venv .venv
+.venv/bin/pip install -r requirements.txt
+sudo apt install tesseract-ocr tesseract-ocr-lit tesseract-ocr-eng
+.venv/bin/python afkbot.py
+```
+
+Peržiūra naršyklėje, be žaidimo: `npm start` ir atidaryk [http://127.0.0.1:47831](http://127.0.0.1:47831). Nuoroda `?auto=0` palieka lentą, kol atsakymą įrašo ekraną stebinti programa.
+
+Testai:
 
 ```bash
 npm test
-npm start
+.venv/bin/python -m unittest tests.test_watcher -v
 ```
 
-Tada atidaryk [http://127.0.0.1:47831](http://127.0.0.1:47831). Pirmas klausimas visada yra `35 + 54`. Dešinėje matai boto žurnalą.
+## Kaip atpažįsta lentą
 
-- **Naujas klausimas** — kita sudėtis, atimtis, daugyba arba dalyba.
-- **Botas įjungtas / išjungtas** — kai išjungta, atsakymą rašai pats.
-- **Atsakyti neteisingai** — parodo, kad serveris atmeta blogą atsakymą ir leidžia bandyti dar kartą.
+Ieško plataus žalio **Patvirtinti** mygtuko tamsioje kortelėje, perskaito tekstą virš jo ir suskaičiuoja. Moka `+`, `-`, `×`, `/`, skliaustus ir lietuviškus klausimus, pavyzdžiui „dvidešimt penki plius dešimt“.
 
-## Diegimas į FiveM
+## FiveM resursas
 
-1. Nukopijuok šį katalogą į serverio `resources` aplanką (pavadinimas `afk-bot`).
-2. Į `server.cfg` įrašyk:
-
-```cfg
-ensure afk-bot
-```
-
-3. Perkrauk serverį.
-
-Žaidime:
-
-| Komanda | Ką daro |
-| --- | --- |
-| `/afktest` | Iškart parodo AFK klausimą |
-| `/afkbot` | Įjungia arba išjungia automatinį atsakymą |
-
-Jei žaidėjas nejuda `Config.IdleSeconds` sekundžių (numatytai 120), patikra pasirodo pati. Po teisingo atsakymo yra pauzė (`Config.CooldownSeconds`).
-
-## Nustatymai
-
-Visi nustatymai yra `config.lua`:
-
-- `AutoAnswer` — ar botas rašo atsakymą pats.
-- `ThinkDelayMs` ir `TypeDelayMs` — pauzė prieš rašymą ir tarp simbolių.
-- `AutoCheck` ir `IdleSeconds` — kada laikyti žaidėją AFK.
-- `ListenEvents` — kitų resursų klientų eventai, kurių pirmas argumentas yra klausimo tekstas. Tada botas parodo langą ir atsako, o atsakymą išsiunčia lokaliu eventu `afk-bot:answered`.
-
-Kitas serverio resursas gali užduoti konkretų klausimą:
-
-```lua
-exports['afk-bot']:Ask(playerId, 'Kiek bus 10 + 5?', 15)
-```
-
-## Ką botas moka perskaityti
-
-- `Kiek bus 35 + 54?`, taip pat `-`, `*`, `x`, `×`, `/`, `÷`
-- veiksmų tvarką ir skliaustus: `2 + 2 * 2`, `(12 + 8) / 4`
-- lietuviškai: `dvidešimt penki plius dešimt`, `7 kart 6`, `šimtas padalinti iš keturi`
-- `Kiek raidžių yra žodyje „labas“?`
-- `Pakartok: Vilnius`
-- `Įrašykite skaičių 42`
+Tas pats klausimų langas yra ir kaip serverio resursas `afk-bot`. Į `server.cfg` įrašyk `ensure afk-bot`. Žaidime `/afktest` parodo klausimą, `/afkbot` įjungia automatinį atsakymą. Ekraną stebinčiai programai šito resurso nereikia: ji veikia ant jau atidarytos serverio lentos.
