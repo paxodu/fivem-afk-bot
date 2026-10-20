@@ -22,17 +22,11 @@ namespace Ratas
     sealed class RatasForm : Form
     {
         const int WhKeyboard = 13;
-        const int WhMouse = 14;
         const int WmHotkey = 0x0312;
         const int WmKeyDown = 0x0100;
         const int WmKeyUp = 0x0101;
         const int WmSysKeyDown = 0x0104;
         const int WmSysKeyUp = 0x0105;
-        const int WmMouseMove = 0x0200;
-        const int WmLDown = 0x0201;
-        const int WmLUp = 0x0202;
-        const int WmRDown = 0x0204;
-        const int WmRUp = 0x0205;
 
         readonly Label title = new Label();
         readonly Label status = new Label();
@@ -47,17 +41,11 @@ namespace Ratas
         readonly object gate = new object();
 
         HookProc keyProc;
-        HookProc mouseProc;
         IntPtr keyHook;
-        IntPtr mouseHook;
         bool capturing;
         bool playing;
         bool hooksReady;
         int recordOrigin;
-        int lastMoveAt;
-        int lastX;
-        int lastY;
-        bool havePointer;
         int playLap;
         string routePath;
 
@@ -68,17 +56,6 @@ namespace Ratas
         {
             public uint Vk;
             public uint Scan;
-            public uint Flags;
-            public uint Time;
-            public IntPtr Extra;
-        }
-
-        [StructLayout(LayoutKind.Sequential)]
-        struct MouseInfo
-        {
-            public int X;
-            public int Y;
-            public uint Data;
             public uint Flags;
             public uint Time;
             public IntPtr Extra;
@@ -133,7 +110,7 @@ namespace Ratas
             status.AutoSize = false;
             status.Bounds = new Rectangle(22, 56, 416, 48);
 
-            hint.Text = "F9 įrašo. Nueik į pirmą checkpointą, tada į antrą ir grįžk tuo pačiu keliu iki vietos, kur pradėjai. F10 baigia įrašą. F11 kartoja tą ratą be galo.";
+            hint.Text = "F9 įrašo. Eik su W, suk su A ir D, ne su pele. Nueik į pirmą checkpointą, tada į antrą ir grįžk iki starto. F10 baigia. F11 kartoja ratą. Seną ratą įrašyk iš naujo.";
             hint.ForeColor = Color.FromArgb(155, 176, 163);
             hint.AutoSize = false;
             hint.Bounds = new Rectangle(22, 108, 416, 96);
@@ -175,11 +152,9 @@ namespace Ratas
             try
             {
                 keyProc = KeyboardHook;
-                mouseProc = MouseHook;
                 IntPtr module = GetModuleHandle(null);
                 keyHook = SetWindowsHookEx(WhKeyboard, keyProc, module, 0);
-                mouseHook = SetWindowsHookEx(WhMouse, mouseProc, module, 0);
-                hooksReady = keyHook != IntPtr.Zero && mouseHook != IntPtr.Zero;
+                hooksReady = keyHook != IntPtr.Zero;
                 RegisterHotKey(Handle, 1, 0, 0x78);
                 RegisterHotKey(Handle, 2, 0, 0x79);
                 RegisterHotKey(Handle, 3, 0, 0x7A);
@@ -239,9 +214,7 @@ namespace Ratas
                 steps.Clear();
                 held.Clear();
             }
-            havePointer = false;
             recordOrigin = Environment.TickCount;
-            lastMoveAt = recordOrigin;
             capturing = true;
             RefreshStatus();
         }
@@ -330,15 +303,21 @@ namespace Ratas
                 Step[] copy;
                 lock (gate)
                 {
-                    copy = steps.ToArray();
+                    copy = Tape.KeysOnly(steps).ToArray();
                 }
                 int started = Environment.TickCount;
                 for (int i = 0; i < copy.Length && playing; i++)
                 {
                     int wait = Tape.WaitMs(started, Environment.TickCount, copy[i].Ms);
+                    int pulsed = Environment.TickCount;
                     while (wait > 0 && playing)
                     {
                         Thread.Sleep(wait > 40 ? 40 : wait);
+                        if (Environment.TickCount - pulsed >= 180)
+                        {
+                            PulseHeld();
+                            pulsed = Environment.TickCount;
+                        }
                         wait = Tape.WaitMs(started, Environment.TickCount, copy[i].Ms);
                     }
                     if (!playing)
@@ -375,13 +354,9 @@ namespace Ratas
                     }
                 }
             }
-            else if (step.Kind == StepKind.Move)
-            {
-                bytes = Tape.MouseMove(step.Dx, step.Dy, x64);
-            }
             else
             {
-                bytes = Tape.MouseButton(step.Kind == StepKind.Right, step.Up, x64);
+                return;
             }
             int size = bytes.Length;
             IntPtr raw = Marshal.AllocHGlobal(size);
@@ -425,26 +400,18 @@ namespace Ratas
             return CallNextHookEx(keyHook, code, wParam, lParam);
         }
 
-        IntPtr MouseHook(int code, IntPtr wParam, IntPtr lParam)
+        void PulseHeld()
         {
-            if (code >= 0 && capturing && GetForegroundWindow() != Handle)
+            ushort[] down;
+            lock (gate)
             {
-                int msg = wParam.ToInt32();
-                var info = (MouseInfo)Marshal.PtrToStructure(lParam, typeof(MouseInfo));
-                if (msg == WmMouseMove)
-                {
-                    NoteMove(info.X, info.Y);
-                }
-                else if (msg == WmLDown || msg == WmLUp)
-                {
-                    NoteButton(StepKind.Left, msg == WmLUp);
-                }
-                else if (msg == WmRDown || msg == WmRUp)
-                {
-                    NoteButton(StepKind.Right, msg == WmRUp);
-                }
+                down = new ushort[held.Count];
+                held.CopyTo(down);
             }
-            return CallNextHookEx(mouseHook, code, wParam, lParam);
+            for (int i = 0; i < down.Length; i++)
+            {
+                Send(new Step { Kind = StepKind.Key, Vk = down[i], Up = false });
+            }
         }
 
         void NoteKey(ushort vk, bool up)
@@ -478,56 +445,6 @@ namespace Ratas
             }
         }
 
-        void NoteMove(int x, int y)
-        {
-            if (!havePointer)
-            {
-                havePointer = true;
-                lastX = x;
-                lastY = y;
-                return;
-            }
-            int dx = x - lastX;
-            int dy = y - lastY;
-            lastX = x;
-            lastY = y;
-            if (dx == 0 && dy == 0)
-            {
-                return;
-            }
-            int now = Environment.TickCount;
-            lock (gate)
-            {
-                if (now - lastMoveAt < 15 && steps.Count > 0 && steps[steps.Count - 1].Kind == StepKind.Move)
-                {
-                    steps[steps.Count - 1].Dx += dx;
-                    steps[steps.Count - 1].Dy += dy;
-                    return;
-                }
-                lastMoveAt = now;
-                steps.Add(new Step
-                {
-                    Ms = now - recordOrigin,
-                    Kind = StepKind.Move,
-                    Dx = dx,
-                    Dy = dy
-                });
-            }
-        }
-
-        void NoteButton(StepKind kind, bool up)
-        {
-            lock (gate)
-            {
-                steps.Add(new Step
-                {
-                    Ms = Environment.TickCount - recordOrigin,
-                    Kind = kind,
-                    Up = up
-                });
-            }
-        }
-
         void RefreshStatus()
         {
             if (IsDisposed)
@@ -552,7 +469,7 @@ namespace Ratas
             if (capturing)
             {
                 int sec = (Environment.TickCount - recordOrigin) / 1000;
-                status.Text = "Įrašau ratą… " + sec + " s. Grįžk iki starto ir spausk F10.";
+                status.Text = "Įrašau… " + sec + " s. Suk su A ir D, ne su pele. Pabaigoje F10.";
                 return;
             }
             if (playing)
@@ -598,10 +515,6 @@ namespace Ratas
             if (keyHook != IntPtr.Zero)
             {
                 UnhookWindowsHookEx(keyHook);
-            }
-            if (mouseHook != IntPtr.Zero)
-            {
-                UnhookWindowsHookEx(mouseHook);
             }
             base.OnFormClosing(e);
         }

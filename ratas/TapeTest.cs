@@ -33,13 +33,13 @@ namespace Ratas
 
             byte[] key = Tape.KeyStroke(0x57, 0x11, false, true);
             Expect(key.Length == 40, "64 bitų klavišo paketas");
-            Expect(key[0] == 1 && key[8] == 0x57 && key[10] == 0x11 && key[12] == 8, "W siunčiamas skenavimo kodu");
+            Expect(key[0] == 1 && key[8] == 0 && key[10] == 0x11 && key[12] == 8, "W siunčiamas tik skenavimo kodu");
             byte[] up = Tape.KeyStroke(0x57, 0x11, true, true);
             Expect(up[12] == 10, "atleidimas turi KEYUP ir SCANCODE");
-            byte[] move = Tape.MouseMove(-20, 15, true);
-            Expect(move.Length == 40 && move[8] == 236 && move[20] == 1, "pelė juda santykinai");
             byte[] key32 = Tape.KeyStroke(0x11, 0x12, true, false);
-            Expect(key32.Length == 28 && key32[4] == 0x11 && key32[8] == 10, "32 bitų klavišo paketas");
+            Expect(key32.Length == 28 && key32[4] == 0 && key32[6] == 0x12 && key32[8] == 10, "32 bitų klavišo paketas");
+            List<Step> keys = Tape.KeysOnly(loaded);
+            Expect(keys.Count == 2 && keys[0].Vk == 0x57 && keys[1].Up, "kartojami tik ėjimo klavišai");
 
             bool bad = false;
             try

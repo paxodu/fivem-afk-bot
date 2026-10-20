@@ -36,6 +36,19 @@ namespace Ratas
             return alreadyDown && !up;
         }
 
+        public static List<Step> KeysOnly(IList<Step> steps)
+        {
+            var keys = new List<Step>();
+            for (int i = 0; i < steps.Count; i++)
+            {
+                if (steps[i].Kind == StepKind.Key)
+                {
+                    keys.Add(steps[i]);
+                }
+            }
+            return keys;
+        }
+
         public static int WaitMs(int startedAt, int now, int eventMs)
         {
             int elapsed = now - startedAt;
@@ -143,7 +156,7 @@ namespace Ratas
             int at = x64 ? 8 : 4;
             var bytes = new byte[size];
             WriteU32(bytes, 0, 1);
-            WriteU16(bytes, at, vk);
+            WriteU16(bytes, at, 0);
             WriteU16(bytes, at + 2, scan);
             uint flags = 8;
             if (up)

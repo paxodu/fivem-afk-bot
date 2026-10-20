@@ -2,7 +2,9 @@
 
 ## Checkpointų ratas
 
-[Ratas.exe](https://github.com/paxodu/fivem-afk-bot/releases/download/v1.3.0/Ratas.exe) kartoja tavo nueitą kelią. FiveM laikyk lango režimu. Jei žaidimą leidai kaip administratorius, Ratas paleisk taip pat.
+[Ratas.exe](https://github.com/paxodu/fivem-afk-bot/releases/download/v1.3.1/Ratas.exe) kartoja tavo nueitą kelią. FiveM laikyk lango režimu. Jei žaidimą leidai kaip administratorius, Ratas paleisk taip pat.
+
+Suk į šonus klavišais **A** ir **D**, ne pele. Pelės programa nebekartoja, todėl kamera nebedreba. Seną ratą įrašyk iš naujo.
 
 1. Atsistok ten, kur ratas turi prasidėti, ir paspausk **F9**.
 2. Nueik į pirmą checkpointą, tada į antrą ir grįžk tuo pačiu keliu iki starto.
