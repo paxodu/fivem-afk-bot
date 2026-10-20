@@ -9,4 +9,5 @@ dist/
 *.spec
 __pycache__/
 *.pyc
-combined/AutoFish.exe
+GOOD.zip
+combined/

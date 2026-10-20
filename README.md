@@ -1,16 +1,6 @@
-# AFK botas
+# Auto fish
 
-Programa, kuri stebi ekraną. Kai FiveM išlenda lenta **AFK buvimas** su klausimu, pavyzdžiui „Kiek bus 35 + 54?“, botas pats įrašo atsakymą ir paspaudžia **Patvirtinti**.
-
-Langas būna viršutiniame dešiniajame kampe, kad neuždengtų lentos. **F8** pristabdo arba vėl įjungia stebėjimą.
-
-## Atsisiųsk AutoFish.exe
-
-Viena programa vietoj atskirų `E_spaudiklis`, `Auto_fish_online` ir `Auto_fish_raktai`. Python diegti nereikia. Atsisiųsk ir dukart spausk:
-
-[AutoFish.exe](https://github.com/paxodu/fivem-afk-bot/releases/download/v1.1.0/AutoFish.exe)
-
-Atsidaro langas su trimis mygtukais: **Žvejyba**, **Kas žvejoja**, **Raktų generatorius**. Raktų generatoriaus niekam nesiųsk.
+Žvejybai naudok tik `E_spaudiklis.exe` iš savo aplanko GOOD. Raktų generatorius ir „kas žvejoja“ lieka atskiri failai tame pačiame aplanke. Jų į žvejybos programą nedėk ir niekam nesiųsk.
 
 FiveM laikyk lango režimu arba borderless, ne išskirtiniu viso ekrano režimu, kad programa matytų lentą. Windows gali paklausti, ar leisti programai valdyti pelę ir klaviatūrą — leisk.
 
