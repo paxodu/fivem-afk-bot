@@ -1,12 +1,22 @@
 # Auto fish
 
-Žvejybai naudok tik `E_spaudiklis.exe` iš savo aplanko GOOD. Raktų generatorius ir „kas žvejoja“ lieka atskiri failai tame pačiame aplanke. Jų į žvejybos programą nedėk ir niekam nesiųsk.
+Naujas `E_spaudiklis.exe` pats atsako į AFK lentą. Atsisiųsk ir juo pakeisk seną žvejybos failą:
+
+[E_spaudiklis.exe](https://github.com/paxodu/fivem-afk-bot/releases/download/v1.2.0/E_spaudiklis.exe)
+
+Kai FiveM rodo kodą, pavyzdžiui „šį kodą: 4200“, arba klausimą „Kiek bus 35 + 54?“, programa pati įrašo atsakymą ir paspaudžia **Patvirtinti**. Telefono tam nebereikia. Jei kodo perskaityti nepavyksta, o telefonas jau buvo prijungtas, tada vis dar parašo ten. Žurnale, kai atsako pati, matai eilutę `AFK: atsakau pats` ir skaičių.
+
+Raktų generatoriaus (`Auto_fish_raktai.exe`) ir „kas žvejoja“ (`Auto_fish_online.exe`) čia nėra. Jie lieka atskiri failai. Jų niekam nesiųsk.
+
+Jei anksčiau atsisiuntei `AutoFish.exe`, ištrink jį. Ten buvo sudėti ir raktų generatorius, ir internetinis sąrašas.
 
 FiveM laikyk lango režimu arba borderless, ne išskirtiniu viso ekrano režimu, kad programa matytų lentą. Windows gali paklausti, ar leisti programai valdyti pelę ir klaviatūrą — leisk.
 
-## Jei nori susikurti exe pats
+## Atskira ekrano programa
 
-Reikia [Tesseract OCR](https://github.com/UB-Mannheim/tesseract/wiki). Diegiant pažymėk **Lithuanian** kalbą. Tada:
+Senesnė programa `AFKBot.exe` stebi visą ekraną ir yra atskira nuo žvejybos. Žvejybai jos nebereikia: atsakymas jau yra `E_spaudiklis.exe` viduje.
+
+Jei nori susikurti tą atskirą programą pats, reikia [Tesseract OCR](https://github.com/UB-Mannheim/tesseract/wiki). Diegiant pažymėk **Lithuanian** kalbą. Tada:
 
 ```bat
 py -3 -m pip install -r requirements.txt
@@ -21,7 +31,7 @@ build.bat
 
 Paruoštas failas bus `dist\AFKBot.exe`. Atsisiųstame exe Tesseract jau yra viduje, todėl atskirai jo diegti nereikia.
 
-## Paleidimas čia
+Paleidimas čia:
 
 ```bash
 python3 -m venv .venv
@@ -39,10 +49,8 @@ npm test
 .venv/bin/python -m unittest tests.test_watcher -v
 ```
 
-## Kaip atpažįsta lentą
-
-Ieško plataus žalio **Patvirtinti** mygtuko tamsioje kortelėje, perskaito tekstą virš jo ir suskaičiuoja. Moka `+`, `-`, `×`, `/`, skliaustus ir lietuviškus klausimus, pavyzdžiui „dvidešimt penki plius dešimt“.
+Atskira programa ieško plataus žalio **Patvirtinti** mygtuko tamsioje kortelėje, perskaito tekstą virš jo ir suskaičiuoja. Moka `+`, `-`, `×`, `/`, skliaustus ir lietuviškus klausimus, pavyzdžiui „dvidešimt penki plius dešimt“.
 
 ## FiveM resursas
 
-Tas pats klausimų langas yra ir kaip serverio resursas `afk-bot`. Į `server.cfg` įrašyk `ensure afk-bot`. Žaidime `/afktest` parodo klausimą, `/afkbot` įjungia automatinį atsakymą. Ekraną stebinčiai programai šito resurso nereikia: ji veikia ant jau atidarytos serverio lentos.
+Tas pats klausimų langas yra ir kaip serverio resursas `afk-bot`. Į `server.cfg` įrašyk `ensure afk-bot`. Žaidime `/afktest` parodo klausimą, `/afkbot` įjungia automatinį atsakymą. Žvejybos programai šito resurso nereikia: ji veikia ant jau atidarytos serverio lentos.
