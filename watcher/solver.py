@@ -228,22 +228,25 @@ def _math_from(text):
     return None
 
 
+def _code_token(token):
+    if token and 2 <= len(token) <= 16 and re.search(r"\d", token):
+        return token
+    return None
+
+
 def _code_from(original):
-    """Serverio lenta rodo kodą, pvz. „įrašę šį kodą: 8136“."""
-    labeled = re.search(
-        r"kod(?:ą|a)s?\s*[:\-]\s*([A-Za-z0-9]{2,16})",
-        original,
-        re.IGNORECASE,
-    )
+    """Serverio lenta rodo kodą, pvz. „įrašę šį kodą: 8136“.
+
+    OCR kartais perskaito „kodą“ kaip „koda“ arba „kodq“.
+    """
+    labeled = re.search(r"kod\w{0,2}\s*[:\-]\s*([A-Za-z0-9]{2,16})", original, re.IGNORECASE)
     if labeled:
-        return labeled.group(1)
-    loose = re.search(
-        r"kod(?:ą|a)s?\s+([A-Za-z0-9]*\d[A-Za-z0-9]{1,15})",
-        original,
-        re.IGNORECASE,
-    )
+        return _code_token(labeled.group(1)) or labeled.group(1)
+    loose = re.search(r"kod\w{0,2}\s+([A-Za-z0-9]{2,16})", original, re.IGNORECASE)
     if loose:
-        return loose.group(1)
+        token = _code_token(loose.group(1))
+        if token:
+            return token
     return None
 
 

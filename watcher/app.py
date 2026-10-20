@@ -15,6 +15,7 @@ from pynput.keyboard import Listener
 from watcher.actor import submit_answer
 from watcher.vision import locate
 from watcher.vision import tesseract_ready
+from watcher import vision
 
 BG = "#07111f"
 CARD = "#0d1b2e"
@@ -109,9 +110,10 @@ def watch_once(log, should_stop, memory=None, pause=0.35):
         if panel is None:
             continue
         if not panel.answer:
-            if memory.unsolved != panel.text:
-                memory.unsolved = panel.text
-                log(f"Matau lentą, bet neperskaičiau kodo: {panel.text}")
+            detail = panel.text or vision._LAST_OCR_ERROR or "tuščias tekstas"
+            if memory.unsolved != detail:
+                memory.unsolved = detail
+                log(f"Matau lentą, bet neperskaičiau kodo: {detail}")
             continue
         saw_panel = True
         if not memory.should_answer(panel):

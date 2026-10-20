@@ -36,6 +36,7 @@ class SolverTests(unittest.TestCase):
             "Kiek bus 15?",
             "Jūs esate AFK, sugrįžti galite apačioje įrašę šį kodą: 8136",
             "Įrašykite šį kodą AB12",
+            "AFK buvimas Jiis esate AFK, sugrjzti galite apacioje jraSe $j kodq: 4200 AFK kodas",
             "",
             "Kas yra AFK?",
             "Kiek bus 8 / 0?",

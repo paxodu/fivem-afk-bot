@@ -44,6 +44,12 @@ test('serverio AFK kodas', () => {
     '8136'
   );
   assert.equal(solveAfkQuestion('Įrašykite šį kodą AB12'), 'AB12');
+  assert.equal(
+    solveAfkQuestion(
+      'AFK buvimas Jiis esate AFK, sugrjzti galite apacioje jraSe $j kodq: 4200 AFK kodas'
+    ),
+    '4200'
+  );
 });
 
 test('kiti šablonai', () => {

@@ -2,6 +2,7 @@
 
 import os
 import shutil
+import subprocess
 import sys
 from dataclasses import dataclass
 
@@ -22,6 +23,8 @@ _WINDOWS_TESSERACT = (
 
 
 _TESSERACT_READY = None
+_TESSDATA = None
+_LAST_OCR_ERROR = ""
 
 
 def _search_roots():
@@ -44,8 +47,31 @@ def _bundled_tesseract():
     return None
 
 
+def _tessdata_dir(exe_path):
+    folder = os.path.dirname(exe_path)
+    direct = os.path.join(folder, "tessdata")
+    if os.path.isdir(direct):
+        return direct
+    if os.path.isdir(folder) and os.path.isfile(os.path.join(folder, "eng.traineddata")):
+        return folder
+    return None
+
+
+def _hide_tesseract_console():
+    if os.name != "nt" or pytesseract is None:
+        return
+    original = pytesseract.pytesseract.subprocess_args
+
+    def _hidden(include_stdout=True):
+        kwargs = original(include_stdout)
+        kwargs["creationflags"] = kwargs.get("creationflags", 0) | subprocess.CREATE_NO_WINDOW
+        return kwargs
+
+    pytesseract.pytesseract.subprocess_args = _hidden
+
+
 def tesseract_ready():
-    global _TESSERACT_READY
+    global _TESSERACT_READY, _TESSDATA
     if _TESSERACT_READY is not None:
         return _TESSERACT_READY
     _TESSERACT_READY = False
@@ -55,15 +81,21 @@ def tesseract_ready():
     bundled = _bundled_tesseract()
     if bundled:
         pytesseract.pytesseract.tesseract_cmd = bundled
-        os.environ["TESSDATA_PREFIX"] = os.path.dirname(bundled)
     elif os.name == "nt":
         for path in _WINDOWS_TESSERACT:
             if os.path.exists(path):
                 pytesseract.pytesseract.tesseract_cmd = path
-                os.environ.setdefault("TESSDATA_PREFIX", os.path.dirname(path))
                 break
     elif shutil.which("tesseract") is None:
         return False
+
+    exe = getattr(pytesseract.pytesseract, "tesseract_cmd", "")
+    tessdata = _tessdata_dir(exe) if exe else None
+    if tessdata:
+        _TESSDATA = tessdata
+        # Šita Windows Tesseract versija ieško kalbos failų tiesiai TESSDATA_PREFIX aplanke.
+        os.environ["TESSDATA_PREFIX"] = tessdata
+    _hide_tesseract_console()
     try:
         pytesseract.get_tesseract_version()
     except Exception:
@@ -156,24 +188,44 @@ def _green_boxes(rgb):
     return boxes
 
 
+def _ocr_config():
+    return "--psm 6"
+
+
+def _ocr_once(image):
+    global _LAST_OCR_ERROR
+    config = _ocr_config()
+    try:
+        text = pytesseract.image_to_string(image, lang="lit+eng", config=config)
+    except Exception as error:
+        _LAST_OCR_ERROR = str(error).splitlines()[0][:180]
+        try:
+            text = pytesseract.image_to_string(image, lang="eng", config=config)
+        except Exception as second:
+            _LAST_OCR_ERROR = str(second).splitlines()[0][:180]
+            return ""
+    _LAST_OCR_ERROR = ""
+    return " ".join(text.split())
+
+
 def _ocr(image):
     if not tesseract_ready():
+        global _LAST_OCR_ERROR
+        _LAST_OCR_ERROR = "Nėra Tesseract"
         return ""
-    gray = ImageOps.invert(image.convert("L"))
-    scaled = gray.resize((gray.width * 2, gray.height * 2), Image.Resampling.LANCZOS)
-    languages = "lit+eng"
-    try:
-        pytesseract.get_languages()
-    except Exception:
-        languages = "eng"
-    try:
-        text = pytesseract.image_to_string(scaled, lang=languages, config="--psm 6")
-    except Exception:
-        try:
-            text = pytesseract.image_to_string(scaled, lang="eng", config="--psm 6")
-        except Exception:
-            return ""
-    return " ".join(text.split())
+    gray = image.convert("L")
+    bigger = gray.resize((max(1, gray.width * 2), max(1, gray.height * 2)), Image.Resampling.LANCZOS)
+    variants = (gray, ImageOps.invert(gray), bigger, ImageOps.invert(bigger))
+    best = ""
+    for variant in variants:
+        text = _ocr_once(variant)
+        if not text:
+            continue
+        if solve_afk_question(text):
+            return text
+        if len(text) > len(best):
+            best = text
+    return best
 
 
 def _question_crop(image, box):
