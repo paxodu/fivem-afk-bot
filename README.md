@@ -4,11 +4,13 @@ Programa, kuri stebi ekraną. Kai FiveM išlenda lenta **AFK buvimas** su klausi
 
 Langas būna viršutiniame dešiniajame kampe, kad neuždengtų lentos. **F8** pristabdo arba vėl įjungia stebėjimą.
 
-## Atsisiųsk AFKBot.exe
+## Atsisiųsk AutoFish.exe
 
-Python diegti nereikia. Atsisiųsk ir dukart spausk:
+Viena programa vietoj atskirų `E_spaudiklis`, `Auto_fish_online` ir `Auto_fish_raktai`. Python diegti nereikia. Atsisiųsk ir dukart spausk:
 
-[AFKBot.exe](https://github.com/paxodu/fivem-afk-bot/releases/download/v1.0.2/AFKBot.exe)
+[AutoFish.exe](https://github.com/paxodu/fivem-afk-bot/releases/download/v1.1.0/AutoFish.exe)
+
+Atsidaro langas su trimis mygtukais: **Žvejyba**, **Kas žvejoja**, **Raktų generatorius**. Raktų generatoriaus niekam nesiųsk.
 
 FiveM laikyk lango režimu arba borderless, ne išskirtiniu viso ekrano režimu, kad programa matytų lentą. Windows gali paklausti, ar leisti programai valdyti pelę ir klaviatūrą — leisk.
 
