@@ -1,5 +1,18 @@
 # Auto fish
 
+## Checkpointų ratas
+
+[Ratas.exe](https://github.com/paxodu/fivem-afk-bot/releases/download/v1.3.0/Ratas.exe) kartoja tavo nueitą kelią. FiveM laikyk lango režimu. Jei žaidimą leidai kaip administratorius, Ratas paleisk taip pat.
+
+1. Atsistok ten, kur ratas turi prasidėti, ir paspausk **F9**.
+2. Nueik į pirmą checkpointą, tada į antrą ir grįžk tuo pačiu keliu iki starto.
+3. **F10** baigia įrašą.
+4. **F11** suka tą patį ratą iš naujo, kol dar kartą paspaudi **F11**.
+
+Ratas įsimena kelią šalia programos, faile `ratas.txt`.
+
+## AFK atsakymas
+
 Naujas `E_spaudiklis.exe` pats atsako į AFK lentą. Atsisiųsk ir juo pakeisk seną žvejybos failą:
 
 [E_spaudiklis.exe](https://github.com/paxodu/fivem-afk-bot/releases/download/v1.2.0/E_spaudiklis.exe)
