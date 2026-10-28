@@ -1,6 +1,9 @@
 using System;
+using System.Diagnostics;
 using System.Drawing;
 using System.Runtime.InteropServices;
+using System.Security.Principal;
+using System.Text;
 using System.Threading;
 using System.Windows.Forms;
 
@@ -9,11 +12,54 @@ namespace Apelsinai
     static class Program
     {
         [STAThread]
+        [DllImport("user32.dll")]
+        static extern bool SetProcessDPIAware();
+
         static void Main()
         {
+            SetProcessDPIAware();
+            if (RestartAsAdmin())
+            {
+                return;
+            }
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
             Application.Run(new ApelsinasForm());
+        }
+
+        static bool RestartAsAdmin()
+        {
+            if (IsAdmin())
+            {
+                return false;
+            }
+            try
+            {
+                var start = new ProcessStartInfo();
+                start.FileName = Application.ExecutablePath;
+                start.UseShellExecute = true;
+                start.Verb = "runas";
+                Process.Start(start);
+                return true;
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
+
+        static bool IsAdmin()
+        {
+            try
+            {
+                var identity = WindowsIdentity.GetCurrent();
+                var principal = new WindowsPrincipal(identity);
+                return principal.IsInRole(WindowsBuiltInRole.Administrator);
+            }
+            catch (Exception)
+            {
+                return false;
+            }
         }
     }
 
@@ -27,9 +73,10 @@ namespace Apelsinai
         readonly System.Windows.Forms.Timer clock = new System.Windows.Forms.Timer();
 
         volatile bool running = true;
-        bool holding;
         int misses;
-        int busy;
+        int clicksOnThis;
+        int lastClickTick;
+        bool warnedBlocked;
 
         [DllImport("user32.dll")]
         static extern bool RegisterHotKey(IntPtr hwnd, int id, uint mods, uint vk);
@@ -42,6 +89,38 @@ namespace Apelsinai
 
         [DllImport("user32.dll", SetLastError = true)]
         static extern uint SendInput(uint count, IntPtr inputs, int size);
+
+        [DllImport("user32.dll")]
+        static extern bool ClipCursor(IntPtr rect);
+
+        [DllImport("user32.dll")]
+        static extern IntPtr GetForegroundWindow();
+
+        [DllImport("user32.dll")]
+        static extern bool SetForegroundWindow(IntPtr hwnd);
+
+        [DllImport("user32.dll")]
+        static extern bool ShowWindow(IntPtr hwnd, int command);
+
+        [DllImport("user32.dll")]
+        static extern bool IsWindowVisible(IntPtr hwnd);
+
+        [DllImport("user32.dll")]
+        static extern bool AttachThreadInput(uint from, uint to, bool attach);
+
+        [DllImport("user32.dll")]
+        static extern uint GetWindowThreadProcessId(IntPtr hwnd, out uint processId);
+
+        [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+        static extern int GetWindowText(IntPtr hwnd, StringBuilder text, int count);
+
+        [DllImport("user32.dll")]
+        static extern bool EnumWindows(EnumWindowsProc callback, IntPtr lParam);
+
+        [DllImport("kernel32.dll")]
+        static extern uint GetCurrentThreadId();
+
+        delegate bool EnumWindowsProc(IntPtr hwnd, IntPtr lParam);
 
         public ApelsinasForm()
         {
@@ -60,7 +139,7 @@ namespace Apelsinai
             title.Bounds = new Rectangle(22, 16, 376, 32);
 
             var hint = new Label();
-            hint.Text = "Kai ant apelsino matai baltą ratą, paspaudžiu pelę ant jo. Raudoną ratą praleidžiu. FiveM laikyk lango režimu.";
+            hint.Text = "Kai ant apelsino matai baltą ratą, paspaudžiu pelę ant jo. Raudoną ratą praleidžiu. FiveM laikyk lango režimu. Jei žaidimas paleistas kaip administratorius, šitą programą paleisk taip pat.";
             hint.ForeColor = Color.FromArgb(210, 184, 164);
             hint.Bounds = new Rectangle(22, 54, 376, 58);
 
@@ -142,25 +221,18 @@ namespace Apelsinai
 
         void Look()
         {
-            if (!running || Interlocked.Exchange(ref busy, 1) == 1)
+            if (!running)
             {
                 return;
             }
-            ThreadPool.QueueUserWorkItem(delegate
+            try
             {
-                try
-                {
-                    Scan();
-                }
-                catch (Exception ex)
-                {
-                    BeginInvoke((Action)delegate { Write("Klaida: " + ex.Message); });
-                }
-                finally
-                {
-                    Interlocked.Exchange(ref busy, 0);
-                }
-            });
+                Scan();
+            }
+            catch (Exception ex)
+            {
+                Write("Klaida: " + ex.Message);
+            }
         }
 
         void Scan()
@@ -170,7 +242,14 @@ namespace Apelsinai
             {
                 using (var graphics = Graphics.FromImage(bitmap))
                 {
-                    graphics.CopyFromScreen(area.X, area.Y, 0, 0, area.Size);
+                    try
+                    {
+                        graphics.CopyFromScreen(area.X, area.Y, 0, 0, area.Size, CopyPixelOperation.SourceCopy | CopyPixelOperation.CaptureBlt);
+                    }
+                    catch (Exception)
+                    {
+                        graphics.CopyFromScreen(area.X, area.Y, 0, 0, area.Size);
+                    }
                 }
                 Hit hit = Finder.Find(bitmap);
                 if (hit == null)
@@ -178,47 +257,121 @@ namespace Apelsinai
                     misses++;
                     if (misses >= 3)
                     {
-                        holding = false;
+                        clicksOnThis = 0;
                     }
-                    if (!holding)
+                    if (clicksOnThis == 0 && running)
                     {
-                        BeginInvoke((Action)delegate
-                        {
-                            if (running)
-                            {
-                                status.Text = "Laukiu balto rato";
-                            }
-                        });
+                        status.Text = "Laukiu balto rato";
                     }
                     return;
                 }
                 misses = 0;
-                if (holding)
+                int now = Environment.TickCount;
+                if (clicksOnThis >= 4)
                 {
                     return;
                 }
-                ClickFruit(area.X + hit.X, area.Y + hit.Y, area);
-                holding = true;
-                BeginInvoke((Action)delegate
+                if (clicksOnThis > 0 && unchecked(now - lastClickTick) < 450)
                 {
-                    status.Text = "Spusteliu";
-                    Write("Matau baltą ratą, spusteliu ant apelsino.");
-                });
+                    return;
+                }
+                int x = area.X + hit.X;
+                int y = area.Y + hit.Y;
+                FocusGame();
+                bool reached = ClickFruit(x, y, area);
+                clicksOnThis++;
+                lastClickTick = Environment.TickCount;
+                status.Text = "Spusteliu";
+                Write("Matau baltą ratą, spusteliu ant apelsino.");
+                if (!reached && !warnedBlocked)
+                {
+                    warnedBlocked = true;
+                    Write("Windows užblokavo pelę. Uždaryk ir paleisk programą kaip administratorius, jei FiveM irgi taip paleistas.");
+                }
             }
         }
 
-        static void ClickFruit(int x, int y, Rectangle screen)
+        static void FocusGame()
         {
-            SetCursorPos(x, y);
-            Thread.Sleep(40);
-            SendMouse(x, y, screen, 0x0001);
-            Thread.Sleep(30);
-            SendMouse(x, y, screen, 0x0002);
-            Thread.Sleep(40);
-            SendMouse(x, y, screen, 0x0004);
+            IntPtr game = FindGameWindow();
+            if (game == IntPtr.Zero)
+            {
+                return;
+            }
+            IntPtr foreground = GetForegroundWindow();
+            if (foreground == game)
+            {
+                return;
+            }
+            uint ignored;
+            uint foregroundThread = GetWindowThreadProcessId(foreground, out ignored);
+            uint gameThread = GetWindowThreadProcessId(game, out ignored);
+            uint mine = GetCurrentThreadId();
+            AttachThreadInput(mine, foregroundThread, true);
+            AttachThreadInput(mine, gameThread, true);
+            ShowWindow(game, 9);
+            SetForegroundWindow(game);
+            AttachThreadInput(mine, gameThread, false);
+            AttachThreadInput(mine, foregroundThread, false);
         }
 
-        static void SendMouse(int x, int y, Rectangle screen, int button)
+        static IntPtr FindGameWindow()
+        {
+            IntPtr found = IntPtr.Zero;
+            EnumWindows(delegate(IntPtr hwnd, IntPtr lParam)
+            {
+                if (!IsWindowVisible(hwnd) || !IsGameWindow(hwnd))
+                {
+                    return true;
+                }
+                found = hwnd;
+                return false;
+            }, IntPtr.Zero);
+            return found;
+        }
+
+        static bool IsGameWindow(IntPtr hwnd)
+        {
+            uint processId;
+            GetWindowThreadProcessId(hwnd, out processId);
+            string name = "";
+            try
+            {
+                using (Process process = Process.GetProcessById((int)processId))
+                {
+                    name = process.ProcessName ?? "";
+                }
+            }
+            catch (Exception)
+            {
+                name = "";
+            }
+            string lower = name.ToLowerInvariant();
+            if (lower.Contains("fivem") || lower.Contains("gtaprocess") || lower == "gta5")
+            {
+                return true;
+            }
+            var title = new StringBuilder(512);
+            GetWindowText(hwnd, title, title.Capacity);
+            string text = title.ToString();
+            return text.IndexOf("FiveM", StringComparison.OrdinalIgnoreCase) >= 0
+                || text.IndexOf("Grand Theft Auto", StringComparison.OrdinalIgnoreCase) >= 0;
+        }
+
+        static bool ClickFruit(int x, int y, Rectangle screen)
+        {
+            ClipCursor(IntPtr.Zero);
+            SetCursorPos(x, y);
+            Thread.Sleep(70);
+            bool moved = SendMouse(x, y, screen, 0x0001);
+            Thread.Sleep(40);
+            bool down = SendMouse(x, y, screen, 0x0002);
+            Thread.Sleep(80);
+            bool up = SendMouse(x, y, screen, 0x0004);
+            return moved && down && up;
+        }
+
+        static bool SendMouse(int x, int y, Rectangle screen, int button)
         {
             bool x64 = IntPtr.Size == 8;
             int size = x64 ? 40 : 28;
@@ -232,7 +385,7 @@ namespace Apelsinai
             try
             {
                 Marshal.Copy(data, 0, raw, size);
-                SendInput(1, raw, size);
+                return SendInput(1, raw, size) == 1;
             }
             finally
             {

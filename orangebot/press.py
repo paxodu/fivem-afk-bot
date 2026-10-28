@@ -21,6 +21,7 @@ def _click_windows(x, y):
     import ctypes
 
     user32 = ctypes.windll.user32
+    user32.ClipCursor(None)
     user32.SetCursorPos(x, y)
     time.sleep(0.04)
     width = user32.GetSystemMetrics(78)

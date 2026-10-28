@@ -23,6 +23,19 @@ namespace Apelsinai
             var red = image.Clone(new Rectangle(1100, 160, 400, 300), image.PixelFormat);
             Expect(Finder.Find(red) == null, "raudonas ratas nepaspaudžiamas");
             Expect(Finder.Find(new Bitmap(800, 450)) == null, "tuščias ekranas");
+
+            var night = new Bitmap("/workspace/tests/fixtures/oranges-night.png");
+            Hit nightHit = Finder.Find(night);
+            Expect(nightHit != null, "naktinis baltas ratas rastas");
+            if (nightHit != null)
+            {
+                Expect(Math.Abs(nightHit.X - 1492) < 50, "nakties x " + nightHit.X);
+                Expect(Math.Abs(nightHit.Y - 817) < 50, "nakties y " + nightHit.Y);
+                Expect(nightHit.White > nightHit.Red, "naktį baltas stipresnis");
+                Console.WriteLine("night " + nightHit.X + " " + nightHit.Y + " white=" + nightHit.White + " red=" + nightHit.Red);
+            }
+            var nightRed = night.Clone(new Rectangle(640, 220, 360, 280), night.PixelFormat);
+            Expect(Finder.Find(nightRed) == null, "naktinis raudonas ratas nepaspaudžiamas");
             Expect(Finder.AbsoluteAxis(0, 0, 1920) == 0, "kairys kraštas");
             Expect(Finder.AbsoluteAxis(1919, 0, 1920) == 65535, "dešinys kraštas");
 
