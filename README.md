@@ -2,7 +2,7 @@
 
 ## Apelsinai
 
-[Apelsinas.exe](https://github.com/paxodu/fivem-afk-bot/releases/download/v1.4.0/Apelsinas.exe) stebi ekraną. Kai apelsinas turi **baltą** ratą, paspaudžia **E**. Apelsiną su raudonu ratu praleidžia.
+`Apelsinas.exe` stebi ekraną. Kai apelsinas turi **baltą** ratą, paspaudžia **E**. Apelsiną su raudonu ratu praleidžia.
 
 FiveM laikyk lango režimu. **F8** pristabdo. Windows gali parašyti perspėjimą, nes programa mato ekraną ir spaudžia klavišą.
 
