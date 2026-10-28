@@ -232,4 +232,43 @@ namespace Apelsinai
             return low > 145 && (high - low) < 48 && (r + g + b) > 450;
         }
     }
+
+    static class AimMath
+    {
+        public const int ClickRadius = 50;
+
+        public static void Step(int errorX, int errorY, out int moveX, out int moveY, out bool ready)
+        {
+            ready = Math.Abs(errorX) <= ClickRadius && Math.Abs(errorY) <= ClickRadius;
+            if (ready)
+            {
+                moveX = 0;
+                moveY = 0;
+                return;
+            }
+            moveX = Clamp(errorX / 8);
+            moveY = Clamp(errorY / 8);
+            if (moveX == 0 && errorX != 0)
+            {
+                moveX = errorX > 0 ? 4 : -4;
+            }
+            if (moveY == 0 && errorY != 0)
+            {
+                moveY = errorY > 0 ? 4 : -4;
+            }
+        }
+
+        static int Clamp(int value)
+        {
+            if (value > 48)
+            {
+                return 48;
+            }
+            if (value < -48)
+            {
+                return -48;
+            }
+            return value;
+        }
+    }
 }

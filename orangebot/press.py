@@ -23,32 +23,22 @@ def _click_windows(x, y):
     user32 = ctypes.windll.user32
     user32.ClipCursor(None)
     user32.SetCursorPos(x, y)
-    time.sleep(0.04)
-    width = user32.GetSystemMetrics(78)
-    height = user32.GetSystemMetrics(79)
-    origin_x = user32.GetSystemMetrics(76)
-    origin_y = user32.GetSystemMetrics(77)
-    for button in (0x0001, 0x0002, 0x0004):
-        _send_mouse(user32, x, y, origin_x, origin_y, width, height, button)
-        time.sleep(0.03)
+    time.sleep(0.06)
+    for button in (0x0002, 0x0004):
+        _send_mouse(user32, button)
+        time.sleep(0.05)
 
 
-def _axis(pixel, origin, length):
-    span = max(1, length - 1)
-    value = int(round((pixel - origin) * 65535.0 / span))
-    return min(65535, max(0, value))
-
-
-def _send_mouse(user32, x, y, origin_x, origin_y, width, height, button):
+def _send_mouse(user32, button):
     import ctypes
 
     x64 = ctypes.sizeof(ctypes.c_void_p) == 8
     size = 40 if x64 else 28
     at = 8 if x64 else 4
     data = bytearray(size)
-    flags = button | 0x0001 | 0x8000 | 0x4000
-    _write_i32(data, at, _axis(x, origin_x, width))
-    _write_i32(data, at + 4, _axis(y, origin_y, height))
+    flags = button
+    _write_i32(data, at, 0)
+    _write_i32(data, at + 4, 0)
     _write_i32(data, at + 12, flags)
     raw = ctypes.create_string_buffer(bytes(data))
     user32.SendInput(1, raw, size)

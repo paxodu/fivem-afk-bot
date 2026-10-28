@@ -39,6 +39,17 @@ namespace Apelsinai
             Expect(Finder.AbsoluteAxis(0, 0, 1920) == 0, "kairys kraštas");
             Expect(Finder.AbsoluteAxis(1919, 0, 1920) == 65535, "dešinys kraštas");
 
+            int moveX;
+            int moveY;
+            bool ready;
+            AimMath.Step(0, 0, out moveX, out moveY, out ready);
+            Expect(ready && moveX == 0 && moveY == 0, "centras jau ant apelsino");
+            AimMath.Step(400, -20, out moveX, out moveY, out ready);
+            Expect(!ready && moveX > 0 && moveX <= 48, "sukti dešinėn " + moveX);
+            Expect(moveY < 0, "sukti aukštyn " + moveY);
+            AimMath.Step(-400, 300, out moveX, out moveY, out ready);
+            Expect(moveX < 0 && moveY > 0 && moveY <= 48, "sukti kairėn ir žemyn");
+
             if (fails != 0)
             {
                 Environment.Exit(1);

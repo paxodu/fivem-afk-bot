@@ -2,9 +2,9 @@
 
 ## Apelsinai
 
-[Apelsinas.exe](https://github.com/paxodu/fivem-afk-bot/releases/download/v1.4.1/Apelsinas.exe) stebi ekraną. Kai apelsinas turi **baltą** ratą, paspaudžia **pelę ant jo**. Apelsiną su raudonu ratu praleidžia.
+[Apelsinas.exe](https://github.com/paxodu/fivem-afk-bot/releases/download/v1.4.2/Apelsinas.exe) stebi ekraną. Kai apelsinas turi **baltą** ratą, nuveda pelę ant jo ir paspaudžia. Jei FiveM pelės nelaiko vietoje ir suka kamerą, programa pirmiausia atsuka žvilgsnį į tą apelsiną ir tik tada paspaudžia. Apelsiną su raudonu ratu praleidžia.
 
-FiveM laikyk lango režimu. **F8** pristabdo. Jei žaidimą leidai kaip administratorius, Apelsiną paleisk taip pat — kitaip Windows neleidžia paspausti pelės žaidime. Pirmą kartą Windows paklaus leidimo. Gali parašyti ir perspėjimą, nes programa mato ekraną ir valdo pelę.
+FiveM laikyk lango režimu. **F8** pristabdo. Jei žaidimą leidai kaip administratorius, Apelsiną paleisk taip pat — kitaip Windows neleidžia valdyti pelės žaidime. Paleidus Windows paklaus leidimo. Gali parašyti ir perspėjimą, nes programa mato ekraną ir valdo pelę.
 
 ## Checkpointų ratas
 

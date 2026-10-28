@@ -76,7 +76,13 @@ namespace Apelsinai
         int misses;
         int clicksOnThis;
         int lastClickTick;
+        int lastNoteTick;
         bool warnedBlocked;
+        bool warnedBlank;
+        bool cursorKnown;
+        bool cursorSticks;
+        IntPtr cachedGame;
+        int cachedGameTick;
 
         [DllImport("user32.dll")]
         static extern bool RegisterHotKey(IntPtr hwnd, int id, uint mods, uint vk);
@@ -92,6 +98,37 @@ namespace Apelsinai
 
         [DllImport("user32.dll")]
         static extern bool ClipCursor(IntPtr rect);
+
+        [DllImport("user32.dll")]
+        static extern bool GetCursorPos(out CursorPoint point);
+
+        [DllImport("user32.dll")]
+        static extern bool GetClientRect(IntPtr hwnd, out WindowRect rect);
+
+        [DllImport("user32.dll")]
+        static extern bool ClientToScreen(IntPtr hwnd, ref CursorPoint point);
+
+        [DllImport("user32.dll")]
+        static extern bool IsWindow(IntPtr hwnd);
+
+        [DllImport("user32.dll")]
+        static extern void mouse_event(uint flags, uint dx, uint dy, uint data, UIntPtr extra);
+
+        [StructLayout(LayoutKind.Sequential)]
+        struct CursorPoint
+        {
+            public int X;
+            public int Y;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        struct WindowRect
+        {
+            public int Left;
+            public int Top;
+            public int Right;
+            public int Bottom;
+        }
 
         [DllImport("user32.dll")]
         static extern IntPtr GetForegroundWindow();
@@ -128,7 +165,8 @@ namespace Apelsinai
             FormBorderStyle = FormBorderStyle.FixedDialog;
             MaximizeBox = false;
             ClientSize = new Size(420, 360);
-            StartPosition = FormStartPosition.CenterScreen;
+            StartPosition = FormStartPosition.Manual;
+            Location = new Point(12, 12);
             BackColor = Color.FromArgb(20, 12, 8);
             Font = new Font("Segoe UI", 10f);
 
@@ -139,7 +177,7 @@ namespace Apelsinai
             title.Bounds = new Rectangle(22, 16, 376, 32);
 
             var hint = new Label();
-            hint.Text = "Kai ant apelsino matai baltą ratą, paspaudžiu pelę ant jo. Raudoną ratą praleidžiu. FiveM laikyk lango režimu. Jei žaidimas paleistas kaip administratorius, šitą programą paleisk taip pat.";
+            hint.Text = "Pelę dedu ant apelsino su baltu ratu ir paspaudžiu. Jei FiveM laiko kamerą, pirmiausia atsuku į tą apelsiną. Raudoną praleidžiu. Žaidimą laikyk lango režimu.";
             hint.ForeColor = Color.FromArgb(210, 184, 164);
             hint.Bounds = new Rectangle(22, 54, 376, 58);
 
@@ -177,7 +215,7 @@ namespace Apelsinai
             Controls.Add(log);
             Write("Laukiu apelsino su baltu ratu.");
 
-            clock.Interval = 180;
+            clock.Interval = 120;
             clock.Tick += delegate { Look(); };
             clock.Start();
         }
@@ -237,7 +275,9 @@ namespace Apelsinai
 
         void Scan()
         {
-            Rectangle area = SystemInformation.VirtualScreen;
+            Rectangle area = GameArea();
+            Hit hit;
+            bool blank;
             using (var bitmap = new Bitmap(area.Width, area.Height))
             {
                 using (var graphics = Graphics.FromImage(bitmap))
@@ -251,49 +291,171 @@ namespace Apelsinai
                         graphics.CopyFromScreen(area.X, area.Y, 0, 0, area.Size);
                     }
                 }
-                Hit hit = Finder.Find(bitmap);
-                if (hit == null)
+                hit = Finder.Find(bitmap);
+                blank = hit == null && LooksBlank(bitmap);
+            }
+            if (hit == null)
+            {
+                misses++;
+                if (misses >= 3)
                 {
-                    misses++;
-                    if (misses >= 3)
-                    {
-                        clicksOnThis = 0;
-                    }
-                    if (clicksOnThis == 0 && running)
+                    clicksOnThis = 0;
+                    if (running)
                     {
                         status.Text = "Laukiu balto rato";
                     }
+                }
+                if (blank && !warnedBlank)
+                {
+                    warnedBlank = true;
+                    Write("Nematau žaidimo vaizdo. FiveM laikyk lango režimu, ne išskirtiniu visame ekrane.");
+                }
+                return;
+            }
+            misses = 0;
+            Act(area.X + hit.X, area.Y + hit.Y, area.X + area.Width / 2, area.Y + area.Height / 2);
+        }
+
+        void Act(int fruitX, int fruitY, int centerX, int centerY)
+        {
+            FocusGame();
+            KeepWindowOff(fruitX, fruitY);
+            ClipCursor(IntPtr.Zero);
+            if (!cursorKnown || cursorSticks)
+            {
+                SetCursorPos(fruitX, fruitY);
+                Thread.Sleep(80);
+                CursorPoint here;
+                GetCursorPos(out here);
+                bool stayed = Math.Abs(here.X - fruitX) < 35 && Math.Abs(here.Y - fruitY) < 35;
+                if (!cursorKnown)
+                {
+                    cursorKnown = true;
+                    cursorSticks = stayed;
+                }
+                if (stayed)
+                {
+                    if (!ClickAllowed())
+                    {
+                        return;
+                    }
+                    SetCursorPos(fruitX, fruitY);
+                    NoteClick(LeftClick());
                     return;
                 }
-                misses = 0;
-                int now = Environment.TickCount;
-                if (clicksOnThis >= 4)
+            }
+            int moveX;
+            int moveY;
+            bool ready;
+            AimMath.Step(fruitX - centerX, fruitY - centerY, out moveX, out moveY, out ready);
+            if (ready)
+            {
+                if (!ClickAllowed())
                 {
                     return;
                 }
-                if (clicksOnThis > 0 && unchecked(now - lastClickTick) < 450)
-                {
-                    return;
-                }
-                int x = area.X + hit.X;
-                int y = area.Y + hit.Y;
-                FocusGame();
-                bool reached = ClickFruit(x, y, area);
-                clicksOnThis++;
-                lastClickTick = Environment.TickCount;
-                status.Text = "Spusteliu";
-                Write("Matau baltą ratą, spusteliu ant apelsino.");
-                if (!reached && !warnedBlocked)
-                {
-                    warnedBlocked = true;
-                    Write("Windows užblokavo pelę. Uždaryk ir paleisk programą kaip administratorius, jei FiveM irgi taip paleistas.");
-                }
+                NoteClick(LeftClick());
+                return;
+            }
+            bool moved = SendRelative(moveX, moveY);
+            status.Text = "Taikausi į baltą ratą";
+            int now = Environment.TickCount;
+            if (unchecked(now - lastNoteTick) > 900)
+            {
+                lastNoteTick = now;
+                Write("Matau baltą ratą, taikausi į apelsiną.");
+            }
+            if (!moved && !warnedBlocked)
+            {
+                warnedBlocked = true;
+                Write("Windows užblokavo pelę. Paleisk programą kaip administratorius, jei FiveM irgi taip paleistas.");
             }
         }
 
-        static void FocusGame()
+        bool ClickAllowed()
         {
-            IntPtr game = FindGameWindow();
+            int now = Environment.TickCount;
+            if (clicksOnThis >= 4)
+            {
+                return false;
+            }
+            if (clicksOnThis > 0 && unchecked(now - lastClickTick) < 550)
+            {
+                return false;
+            }
+            return true;
+        }
+
+        void NoteClick(bool reached)
+        {
+            clicksOnThis++;
+            lastClickTick = Environment.TickCount;
+            status.Text = "Spusteliu";
+            Write("Spusteliu ant apelsino su baltu ratu.");
+            if (!reached && !warnedBlocked)
+            {
+                warnedBlocked = true;
+                Write("Windows užblokavo pelę. Paleisk programą kaip administratorius, jei FiveM irgi taip paleistas.");
+            }
+        }
+
+        void KeepWindowOff(int x, int y)
+        {
+            var spot = new Rectangle(x - 50, y - 50, 100, 100);
+            if (!Bounds.IntersectsWith(spot))
+            {
+                return;
+            }
+            Location = new Point(12, 12);
+        }
+
+        Rectangle GameArea()
+        {
+            IntPtr game = GameWindow();
+            WindowRect rect;
+            var origin = new CursorPoint();
+            if (game != IntPtr.Zero && GetClientRect(game, out rect) && ClientToScreen(game, ref origin))
+            {
+                int width = rect.Right - rect.Left;
+                int height = rect.Bottom - rect.Top;
+                if (width > 200 && height > 200)
+                {
+                    return new Rectangle(origin.X, origin.Y, width, height);
+                }
+            }
+            return SystemInformation.VirtualScreen;
+        }
+
+        IntPtr GameWindow()
+        {
+            int now = Environment.TickCount;
+            if (cachedGame != IntPtr.Zero && IsWindow(cachedGame) && unchecked(now - cachedGameTick) < 2000)
+            {
+                return cachedGame;
+            }
+            cachedGame = FindGameWindow();
+            cachedGameTick = now;
+            return cachedGame;
+        }
+
+        static bool LooksBlank(Bitmap bitmap)
+        {
+            long sum = 0;
+            int count = 0;
+            int width = Math.Max(1, bitmap.Width);
+            int height = Math.Max(1, bitmap.Height);
+            for (int i = 0; i < 48; i++)
+            {
+                Color color = bitmap.GetPixel((i * 97) % width, (i * 53) % height);
+                sum += color.R + color.G + color.B;
+                count++;
+            }
+            return count > 0 && sum / count < 4;
+        }
+
+        void FocusGame()
+        {
+            IntPtr game = GameWindow();
             if (game == IntPtr.Zero)
             {
                 return;
@@ -358,34 +520,38 @@ namespace Apelsinai
                 || text.IndexOf("Grand Theft Auto", StringComparison.OrdinalIgnoreCase) >= 0;
         }
 
-        static bool ClickFruit(int x, int y, Rectangle screen)
+        static bool LeftClick()
         {
-            ClipCursor(IntPtr.Zero);
-            SetCursorPos(x, y);
+            bool down = SendPacket(0, 0, 0x0002);
             Thread.Sleep(70);
-            bool moved = SendMouse(x, y, screen, 0x0001);
-            Thread.Sleep(40);
-            bool down = SendMouse(x, y, screen, 0x0002);
-            Thread.Sleep(80);
-            bool up = SendMouse(x, y, screen, 0x0004);
-            return moved && down && up;
+            bool up = SendPacket(0, 0, 0x0004);
+            return down && up;
         }
 
-        static bool SendMouse(int x, int y, Rectangle screen, int button)
+        static bool SendRelative(int dx, int dy)
+        {
+            return SendPacket(dx, dy, 0x0001);
+        }
+
+        static bool SendPacket(int dx, int dy, int flags)
         {
             bool x64 = IntPtr.Size == 8;
             int size = x64 ? 40 : 28;
             int at = x64 ? 8 : 4;
             var data = new byte[size];
-            WriteI32(data, at, Finder.AbsoluteAxis(x, screen.X, screen.Width));
-            WriteI32(data, at + 4, Finder.AbsoluteAxis(y, screen.Y, screen.Height));
-            int flags = button | 0x0001 | 0x8000 | 0x4000;
+            WriteI32(data, at, dx);
+            WriteI32(data, at + 4, dy);
             WriteI32(data, at + 12, flags);
             IntPtr raw = Marshal.AllocHGlobal(size);
             try
             {
                 Marshal.Copy(data, 0, raw, size);
-                return SendInput(1, raw, size) == 1;
+                if (SendInput(1, raw, size) == 1)
+                {
+                    return true;
+                }
+                mouse_event(unchecked((uint)flags), unchecked((uint)dx), unchecked((uint)dy), 0, UIntPtr.Zero);
+                return false;
             }
             finally
             {
