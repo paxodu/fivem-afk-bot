@@ -1,5 +1,11 @@
 # Auto fish
 
+## Apelsinai
+
+[Apelsinas.exe](https://github.com/paxodu/fivem-afk-bot/releases/download/v1.4.0/Apelsinas.exe) stebi ekraną. Kai apelsinas turi **baltą** ratą, paspaudžia **E**. Apelsiną su raudonu ratu praleidžia.
+
+FiveM laikyk lango režimu. **F8** pristabdo. Windows gali parašyti perspėjimą, nes programa mato ekraną ir spaudžia klavišą.
+
 ## Checkpointų ratas
 
 [Ratas.exe](https://github.com/paxodu/fivem-afk-bot/releases/download/v1.3.1/Ratas.exe) kartoja tavo nueitą kelią. FiveM laikyk lango režimu. Jei žaidimą leidai kaip administratorius, Ratas paleisk taip pat.
