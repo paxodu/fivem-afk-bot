@@ -1,5 +1,11 @@
 # Auto fish
 
+## Žalios raidės
+
+[Raides.exe](https://github.com/paxodu/fivem-afk-bot/releases/download/v1.5.0/Raides.exe) stebi ekraną. Kai melžimo lange raidė yra **žalioje** kortelėje, pats paspaudžia tą raidę. Tamsią kortelę, pavyzdžiui A šalia žalio D, praleidžia. Žalią progreso juostelę irgi praleidžia.
+
+FiveM laikyk lango režimu. **F7** pristabdo. Jei žaidimą leidai kaip administratorius, Raides paleisk taip pat — kitaip Windows neleidžia spausti klavišų žaidime. Paleidus Windows paklaus leidimo. Gali parašyti perspėjimą, nes programa mato ekraną ir spaudžia klavišus.
+
 ## Apelsinai
 
 [Apelsinas.exe](https://github.com/paxodu/fivem-afk-bot/releases/download/v1.4.2/Apelsinas.exe) stebi ekraną. Kai apelsinas turi **baltą** ratą, nuveda pelę ant jo ir paspaudžia. Jei FiveM pelės nelaiko vietoje ir suka kamerą, programa pirmiausia atsuka žvilgsnį į tą apelsiną ir tik tada paspaudžia. Apelsiną su raudonu ratu praleidžia.
