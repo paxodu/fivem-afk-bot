@@ -37,6 +37,9 @@ namespace Apelsinai
         [DllImport("user32.dll")]
         static extern bool UnregisterHotKey(IntPtr hwnd, int id);
 
+        [DllImport("user32.dll")]
+        static extern bool SetCursorPos(int x, int y);
+
         [DllImport("user32.dll", SetLastError = true)]
         static extern uint SendInput(uint count, IntPtr inputs, int size);
 
@@ -57,7 +60,7 @@ namespace Apelsinai
             title.Bounds = new Rectangle(22, 16, 376, 32);
 
             var hint = new Label();
-            hint.Text = "Kai ant apelsino matai baltą ratą, paspaudžiu E. Raudoną ratą praleidžiu. FiveM laikyk lango režimu.";
+            hint.Text = "Kai ant apelsino matai baltą ratą, paspaudžiu pelę ant jo. Raudoną ratą praleidžiu. FiveM laikyk lango režimu.";
             hint.ForeColor = Color.FromArgb(210, 184, 164);
             hint.Bounds = new Rectangle(22, 54, 376, 58);
 
@@ -194,32 +197,37 @@ namespace Apelsinai
                 {
                     return;
                 }
-                PressE();
+                ClickFruit(area.X + hit.X, area.Y + hit.Y, area);
                 holding = true;
                 BeginInvoke((Action)delegate
                 {
-                    status.Text = "Spaudžiu E";
-                    Write("Matau baltą ratą, spaudžiu E.");
+                    status.Text = "Spusteliu";
+                    Write("Matau baltą ratą, spusteliu ant apelsino.");
                 });
             }
         }
 
-        static void PressE()
+        static void ClickFruit(int x, int y, Rectangle screen)
         {
-            Tap(false);
-            Thread.Sleep(50);
-            Tap(true);
+            SetCursorPos(x, y);
+            Thread.Sleep(40);
+            SendMouse(x, y, screen, 0x0001);
+            Thread.Sleep(30);
+            SendMouse(x, y, screen, 0x0002);
+            Thread.Sleep(40);
+            SendMouse(x, y, screen, 0x0004);
         }
 
-        static void Tap(bool up)
+        static void SendMouse(int x, int y, Rectangle screen, int button)
         {
             bool x64 = IntPtr.Size == 8;
             int size = x64 ? 40 : 28;
             int at = x64 ? 8 : 4;
             var data = new byte[size];
-            data[0] = 1;
-            data[at + 2] = 0x12;
-            data[at + 4] = (byte)(8 | (up ? 2 : 0));
+            WriteI32(data, at, Finder.AbsoluteAxis(x, screen.X, screen.Width));
+            WriteI32(data, at + 4, Finder.AbsoluteAxis(y, screen.Y, screen.Height));
+            int flags = button | 0x0001 | 0x8000 | 0x4000;
+            WriteI32(data, at + 12, flags);
             IntPtr raw = Marshal.AllocHGlobal(size);
             try
             {
@@ -230,6 +238,15 @@ namespace Apelsinai
             {
                 Marshal.FreeHGlobal(raw);
             }
+        }
+
+        static void WriteI32(byte[] data, int at, int value)
+        {
+            uint bits = unchecked((uint)value);
+            data[at] = (byte)bits;
+            data[at + 1] = (byte)(bits >> 8);
+            data[at + 2] = (byte)(bits >> 16);
+            data[at + 3] = (byte)(bits >> 24);
         }
 
         void Write(string line)

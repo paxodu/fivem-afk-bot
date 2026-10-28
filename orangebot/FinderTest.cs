@@ -23,6 +23,8 @@ namespace Apelsinai
             var red = image.Clone(new Rectangle(1100, 160, 400, 300), image.PixelFormat);
             Expect(Finder.Find(red) == null, "raudonas ratas nepaspaudžiamas");
             Expect(Finder.Find(new Bitmap(800, 450)) == null, "tuščias ekranas");
+            Expect(Finder.AbsoluteAxis(0, 0, 1920) == 0, "kairys kraštas");
+            Expect(Finder.AbsoluteAxis(1919, 0, 1920) == 65535, "dešinys kraštas");
 
             if (fails != 0)
             {

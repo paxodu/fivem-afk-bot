@@ -2,9 +2,9 @@
 
 ## Apelsinai
 
-`Apelsinas.exe` stebi ekraną. Kai apelsinas turi **baltą** ratą, paspaudžia **E**. Apelsiną su raudonu ratu praleidžia.
+`Apelsinas.exe` stebi ekraną. Kai apelsinas turi **baltą** ratą, paspaudžia **pelę ant jo**. Apelsiną su raudonu ratu praleidžia.
 
-FiveM laikyk lango režimu. **F8** pristabdo. Windows gali parašyti perspėjimą, nes programa mato ekraną ir spaudžia klavišą.
+FiveM laikyk lango režimu. **F8** pristabdo. Windows gali parašyti perspėjimą, nes programa mato ekraną ir valdo pelę.
 
 ## Checkpointų ratas
 

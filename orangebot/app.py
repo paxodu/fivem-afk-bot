@@ -1,4 +1,4 @@
-"""Stebi ekraną ir paspaudžia E, kai apelsinas turi baltą ratą."""
+"""Stebi ekraną ir paspaudžia pelę ant apelsino su baltu ratu."""
 
 import ctypes
 import queue
@@ -13,7 +13,7 @@ from pynput.keyboard import Key
 from pynput.keyboard import Listener
 
 from orangebot.detect import find_white_orange
-from orangebot.press import press_e
+from orangebot.press import click
 
 BG = "#140c08"
 CARD = "#24160f"
@@ -44,7 +44,7 @@ def capture_frames():
                 for monitor in grabber.monitors[1:]:
                     shot = grabber.grab(monitor)
                     image = Image.frombytes("RGB", shot.size, shot.rgb)
-                    frames.append(image)
+                    frames.append((image, monitor["left"], monitor["top"]))
                 return frames
         except TypeError:
             if backend != "default":
@@ -84,7 +84,7 @@ class App:
         tk.Label(wrap, text="Apelsinai", bg=BG, fg=TEXT, font=title_font).pack(anchor="w")
         tk.Label(
             wrap,
-            text="Kai ant apelsino matai baltą ratą, paspaudžiu E. Raudoną ratą praleidžiu. FiveM laikyk lango režimu.",
+            text="Kai ant apelsino matai baltą ratą, paspaudžiu pelę ant jo. Raudoną ratą praleidžiu. FiveM laikyk lango režimu.",
             bg=BG,
             fg=MUTED,
             font=body_font,
@@ -180,10 +180,12 @@ class App:
     def _watch_once(self):
         frames = capture_frames()
         hit = None
-        for frame in frames:
+        place = None
+        for frame, left, top in frames:
             found = find_white_orange(frame)
             if found is not None and (hit is None or found.white > hit.white):
                 hit = found
+                place = (left + found.x, top + found.y)
         if hit is None:
             self.misses += 1
             if self.misses >= 3:
@@ -192,10 +194,10 @@ class App:
         self.misses = 0
         if self.holding:
             return False
-        press_e()
+        click(place[0], place[1])
         self.holding = True
-        self.events.put(("log", "Matau baltą ratą, spaudžiu E."))
-        self.events.put(("status", "Spaudžiu E"))
+        self.events.put(("log", "Matau baltą ratą, spusteliu ant apelsino."))
+        self.events.put(("status", "Spusteliu"))
         return True
 
     def loop(self):

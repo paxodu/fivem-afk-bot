@@ -1,37 +1,61 @@
-"""Paspaudžia E. FiveM klauso skenavimo kodo, ne paprastos raidės."""
+"""Paspaudžia kairį pelės mygtuką ant apelsino."""
 
-import ctypes
 import sys
 import time
 
 
-def press_e():
+def click(x, y):
     if sys.platform == "win32":
-        _tap_scan(0x12)
+        _click_windows(int(x), int(y))
         return
-    from pynput.keyboard import Controller
+    from pynput.mouse import Button
+    from pynput.mouse import Controller
 
-    keyboard = Controller()
-    keyboard.press("e")
-    keyboard.release("e")
-
-
-def _tap_scan(scan):
-    _send(scan, up=False)
-    time.sleep(0.05)
-    _send(scan, up=True)
+    mouse = Controller()
+    mouse.position = (int(x), int(y))
+    time.sleep(0.04)
+    mouse.click(Button.left, 1)
 
 
-def _send(scan, up):
+def _click_windows(x, y):
+    import ctypes
+
+    user32 = ctypes.windll.user32
+    user32.SetCursorPos(x, y)
+    time.sleep(0.04)
+    width = user32.GetSystemMetrics(78)
+    height = user32.GetSystemMetrics(79)
+    origin_x = user32.GetSystemMetrics(76)
+    origin_y = user32.GetSystemMetrics(77)
+    for button in (0x0001, 0x0002, 0x0004):
+        _send_mouse(user32, x, y, origin_x, origin_y, width, height, button)
+        time.sleep(0.03)
+
+
+def _axis(pixel, origin, length):
+    span = max(1, length - 1)
+    value = int(round((pixel - origin) * 65535.0 / span))
+    return min(65535, max(0, value))
+
+
+def _send_mouse(user32, x, y, origin_x, origin_y, width, height, button):
+    import ctypes
+
     x64 = ctypes.sizeof(ctypes.c_void_p) == 8
     size = 40 if x64 else 28
     at = 8 if x64 else 4
     data = bytearray(size)
-    data[0] = 1
-    data[at + 2] = scan & 0xFF
-    data[at + 3] = (scan >> 8) & 0xFF
-    flags = 8 | (2 if up else 0)
-    data[at + 4] = flags & 0xFF
-    user32 = ctypes.windll.user32
+    flags = button | 0x0001 | 0x8000 | 0x4000
+    _write_i32(data, at, _axis(x, origin_x, width))
+    _write_i32(data, at + 4, _axis(y, origin_y, height))
+    _write_i32(data, at + 12, flags)
     raw = ctypes.create_string_buffer(bytes(data))
     user32.SendInput(1, raw, size)
+
+
+def _write_i32(data, at, value):
+    bits = value & 0xFFFFFFFF
+    data[at] = bits & 0xFF
+    data[at + 1] = (bits >> 8) & 0xFF
+    data[at + 2] = (bits >> 16) & 0xFF
+    data[at + 3] = (bits >> 24) & 0xFF

@@ -15,6 +15,21 @@ namespace Apelsinai
 
     static class Finder
     {
+        public static int AbsoluteAxis(int pixel, int origin, int length)
+        {
+            int span = Math.Max(1, length - 1);
+            int value = (int)Math.Round((pixel - origin) * 65535.0 / span);
+            if (value < 0)
+            {
+                return 0;
+            }
+            if (value > 65535)
+            {
+                return 65535;
+            }
+            return value;
+        }
+
         public static Hit Find(Bitmap source)
         {
             using (var bitmap = new Bitmap(source.Width, source.Height, PixelFormat.Format32bppArgb))
