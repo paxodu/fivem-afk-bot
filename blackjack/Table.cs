@@ -45,7 +45,17 @@ namespace Blackjackas
             {
                 return null;
             }
-            Point chip = row[0];
+            int gap = row.Count > 1 ? row[1].X - row[0].X : 24;
+            int nudge = gap / 5;
+            if (nudge < 4)
+            {
+                nudge = 4;
+            }
+            if (nudge > 22)
+            {
+                nudge = 22;
+            }
+            Point chip = new Point(row[0].X + nudge, row[0].Y);
             Point confirm;
             if (!ConfirmButton(bytes, stride, width, height, row, out confirm))
             {
@@ -104,7 +114,7 @@ namespace Blackjackas
                     Push(mask, seen, stack, ref top, x, y - 1, width, height);
                     Push(mask, seen, stack, ref top, x, y + 1, width, height);
                 }
-                if (count < 4 || count > 80)
+                if (count < 3 || count > 120)
                 {
                     continue;
                 }
@@ -124,7 +134,7 @@ namespace Blackjackas
                 group.Add(markers[index]);
                 int anchor = markers[index].Y;
                 index++;
-                while (index < markers.Count && Math.Abs(markers[index].Y - anchor) <= 16)
+                while (index < markers.Count && Math.Abs(markers[index].Y - anchor) <= 24)
                 {
                     group.Add(markers[index]);
                     index++;
@@ -218,16 +228,21 @@ namespace Blackjackas
                 {
                     continue;
                 }
+                int centerX = (minX + maxX) / 2;
                 int centerY = (minY + maxY) / 2;
+                if (centerX < width * 28 / 100 || centerX > width * 72 / 100)
+                {
+                    continue;
+                }
                 if (NearChip(chips, minX, maxX, centerY))
                 {
                     continue;
                 }
-                if (boxW > bestWidth || (boxW == bestWidth && centerY > bestY))
+                if (centerY > bestY)
                 {
                     bestWidth = boxW;
                     bestY = centerY;
-                    confirm = new Point((minX + maxX) / 2, centerY);
+                    confirm = new Point(centerX, centerY);
                 }
             }
             return bestWidth > 0;
@@ -266,12 +281,12 @@ namespace Blackjackas
 
         static bool IsRed(int r, int g, int b)
         {
-            return r > 100 && r > g + 20 && r > b + 20 && g < 180;
+            return r > 80 && r > g + 15 && r > b + 15 && g < 200 && b < 190;
         }
 
         static bool IsWhite(int r, int g, int b)
         {
-            return r > 165 && g > 165 && b > 165;
+            return r > 150 && g > 150 && b > 150;
         }
     }
 }

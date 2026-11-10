@@ -22,6 +22,21 @@ namespace Blackjackas
                 Expect(bet.ConfirmX > bet.ChipX + 200, "nespaudžiamas dešinysis all-in");
             }
 
+            var big = new Bitmap(image.Width * 2, image.Height * 2);
+            using (var graphics = Graphics.FromImage(big))
+            {
+                graphics.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.NearestNeighbor;
+                graphics.DrawImage(image, 0, 0, big.Width, big.Height);
+            }
+            Bet scaled = Table.Find(big);
+            Expect(scaled != null, "padidintas langas rastas");
+            if (scaled != null)
+            {
+                Console.WriteLine("scaled chip " + scaled.ChipX + " " + scaled.ChipY + " confirm " + scaled.ConfirmX + " " + scaled.ConfirmY);
+                Expect(Math.Abs(scaled.ChipX - bet.ChipX * 2) < 40, "padidintas žetonas " + scaled.ChipX);
+                Expect(Math.Abs(scaled.ConfirmX - bet.ConfirmX * 2) < 50, "padidintas patvirtinti " + scaled.ConfirmX);
+            }
+
             var onlyAllIn = image.Clone(new Rectangle(170, 300, 200, 100), image.PixelFormat);
             Expect(Table.Find(onlyAllIn) == null, "vienas all-in žetonas nestatomas");
             Expect(Table.Find(new Bitmap(900, 400)) == null, "tuščias ekranas");

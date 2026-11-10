@@ -73,8 +73,8 @@ namespace Blackjackas
         readonly System.Windows.Forms.Timer clock = new System.Windows.Forms.Timer();
 
         volatile bool running = true;
-        bool placed;
         int misses;
+        int lastTry;
         bool warnedBlocked;
         IntPtr cachedGame;
         int cachedGameTick;
@@ -289,7 +289,7 @@ namespace Blackjackas
                 misses++;
                 if (misses >= 3)
                 {
-                    placed = false;
+                    lastTry = 0;
                     if (running)
                     {
                         status.Text = "Laukiu statymo lango";
@@ -298,18 +298,21 @@ namespace Blackjackas
                 return;
             }
             misses = 0;
-            if (placed)
+            int now = Environment.TickCount;
+            if (lastTry != 0 && unchecked(now - lastTry) < 700)
             {
-                status.Text = "Statymas padėtas";
+                status.Text = "Statau 100";
                 return;
             }
             FocusGame();
+            KeepOff(area.X + bet.ChipX, area.Y + bet.ChipY);
+            KeepOff(area.X + bet.ConfirmX, area.Y + bet.ConfirmY);
             bool chip = ClickAt(area.X + bet.ChipX, area.Y + bet.ChipY);
-            Thread.Sleep(180);
+            Thread.Sleep(250);
             bool confirm = ClickAt(area.X + bet.ConfirmX, area.Y + bet.ConfirmY);
-            placed = true;
+            lastTry = Environment.TickCount;
             status.Text = "Statau 100";
-            Write("Pasirinkau mažiausią žetoną ir spaudžiu Patvirtinti.");
+            Write("Matau statymą. Spaudžiu žetoną 100 ir Patvirtinti.");
             if (!(chip && confirm) && !warnedBlocked)
             {
                 warnedBlocked = true;
@@ -317,30 +320,41 @@ namespace Blackjackas
             }
         }
 
+        void KeepOff(int x, int y)
+        {
+            var spot = new Rectangle(x - 40, y - 40, 80, 80);
+            if (!Bounds.IntersectsWith(spot))
+            {
+                return;
+            }
+            Location = new Point(12, 12);
+        }
+
         static bool ClickAt(int x, int y)
         {
             ClipCursor(IntPtr.Zero);
             SetCursorPos(x, y);
-            Thread.Sleep(70);
-            CursorPoint here;
-            GetCursorPos(out here);
-            if (Math.Abs(here.X - x) > 40 || Math.Abs(here.Y - y) > 40)
-            {
-                SetCursorPos(x, y);
-                Thread.Sleep(40);
-            }
-            bool down = SendPacket(0x0002);
             Thread.Sleep(50);
-            bool up = SendPacket(0x0004);
+            SendPacket(3, 0, 0x0001);
+            Thread.Sleep(20);
+            SendPacket(-3, 0, 0x0001);
+            Thread.Sleep(30);
+            SetCursorPos(x, y);
+            Thread.Sleep(40);
+            bool down = SendPacket(0, 0, 0x0002);
+            Thread.Sleep(90);
+            bool up = SendPacket(0, 0, 0x0004);
             return down && up;
         }
 
-        static bool SendPacket(int flags)
+        static bool SendPacket(int dx, int dy, int flags)
         {
             bool x64 = IntPtr.Size == 8;
             int size = x64 ? 40 : 28;
             int at = x64 ? 8 : 4;
             var data = new byte[size];
+            WriteI32(data, at, dx);
+            WriteI32(data, at + 4, dy);
             WriteI32(data, at + 12, flags);
             IntPtr raw = Marshal.AllocHGlobal(size);
             try
@@ -419,14 +433,25 @@ namespace Blackjackas
         static IntPtr FindGameWindow()
         {
             IntPtr found = IntPtr.Zero;
+            int bestArea = 0;
             EnumWindows(delegate(IntPtr hwnd, IntPtr lParam)
             {
                 if (!IsWindowVisible(hwnd) || !IsGameWindow(hwnd))
                 {
                     return true;
                 }
-                found = hwnd;
-                return false;
+                WindowRect rect;
+                if (!GetClientRect(hwnd, out rect))
+                {
+                    return true;
+                }
+                int area = (rect.Right - rect.Left) * (rect.Bottom - rect.Top);
+                if (area > bestArea)
+                {
+                    bestArea = area;
+                    found = hwnd;
+                }
+                return true;
             }, IntPtr.Zero);
             return found;
         }
