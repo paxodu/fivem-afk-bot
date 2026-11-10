@@ -1,5 +1,13 @@
 # Auto fish
 
+## Blackjack
+
+[Blackjack.exe](https://github.com/paxodu/fivem-afk-bot/releases/download/v1.6.0/Blackjack.exe) stebi ekraną. Kai casino rodo „Pasirink savo statymą“, paspaudžia kairį žetoną **100** ir **Patvirtinti**. Dešinio **ALL-IN** neliečia. Kitą kartą stato tik kai statymo langas dingsta ir vėl atsiranda.
+
+Laimėti negarantuoja. Dalintojas stoja ant 17, blackjack moka 3:2, ir kazino vis tiek turi persvarą. Programa tik padeda pastatyti mažą statymą, kortų už tave nežaida.
+
+FiveM laikyk lango režimu, kad matytųsi pelė. **F7** pristabdo. Jei žaidimą leidai kaip administratorius, Blackjack paleisk taip pat. Paleidus Windows paklaus leidimo.
+
 ## Žalios raidės
 
 [Raides.exe](https://github.com/paxodu/fivem-afk-bot/releases/download/v1.5.0/Raides.exe) stebi ekraną. Kai melžimo lange raidė yra **žalioje** kortelėje, pats paspaudžia tą raidę. Tamsią kortelę, pavyzdžiui A šalia žalio D, praleidžia. Žalią progreso juostelę irgi praleidžia.
