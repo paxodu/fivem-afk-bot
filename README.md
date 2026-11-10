@@ -2,7 +2,7 @@
 
 ## Blackjack
 
-[Blackjack.exe](https://github.com/paxodu/fivem-afk-bot/releases/download/v1.6.2/Blackjack.exe) stebi ekraną ir žaidžia ranką pagal taškus po kortomis.
+[Blackjack.exe](https://github.com/paxodu/fivem-afk-bot/releases/download/v1.6.3/Blackjack.exe) stebi ekraną ir žaidžia ranką pagal taškus po kortomis.
 
 - Statymui paspaudžia kairį žetoną **100** ir **Patvirtinti**. **ALL-IN** neliečia.
 - Kai prašo veiksmą, skaito tavo ir dalintojo taškus. **17 ir daugiau — Sustoti** (tarpas). **12–16** prieš dalintojo 2–6 sustoja, prieš aukštą kortą ima (Enter). **11, 10 ir 9** dvigubina, kai tas mygtukas matosi (Shift), kitaip ima kortą.

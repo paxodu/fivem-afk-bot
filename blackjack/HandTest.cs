@@ -46,6 +46,14 @@ namespace Blackjackas
                 Expect(scaled.Dealer == 4, "padidinta dalintojo 4, gauta " + scaled.Dealer);
             }
 
+            var thirteen = new Bitmap("/workspace/tests/fixtures/blackjack-13.jpg");
+            Hand low = Play.Find(thirteen);
+            Console.WriteLine("13 player " + low.Player + " dealer " + low.Dealer + " rows " + low.Rows + " stand " + low.StandX + " " + low.StandY);
+            Expect(low.Player == 13, "žaidėjo 13, gauta " + low.Player);
+            Expect(low.Dealer == 4, "dalintojo 4 prie 13, gauta " + low.Dealer);
+            Expect(Play.Choose(low.Player, low.Dealer, low.CanDouble) == "stand", "13 prieš 4 sustoja");
+            Expect(low.StandY > low.HitY && low.HitY > 0, "sustoti yra po imti");
+
             Hand bet = Play.Find(new Bitmap("/workspace/tests/fixtures/blackjack-bet.jpg"));
             Expect(!bet.SawCircles, "statymo lange kortų nėra");
             Expect(!bet.OurTurn, "statymo lange veiksmų nėra");

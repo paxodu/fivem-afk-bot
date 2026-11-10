@@ -12,6 +12,12 @@ namespace Blackjackas
         public int Player;
         public int Dealer;
         public int Rows;
+        public int HitX;
+        public int HitY;
+        public int StandX;
+        public int StandY;
+        public int DoubleX;
+        public int DoubleY;
 
         public bool OurTurn
         {
@@ -158,18 +164,22 @@ namespace Blackjackas
             {
                 hand.Player = 0;
             }
-            hand.Rows = ButtonRows(bytes, stride, width, height);
+            hand.Rows = ButtonRows(bytes, stride, width, height, hand);
             return hand;
         }
 
-        static int ButtonRows(byte[] bytes, int stride, int width, int height)
+        static int ButtonRows(byte[] bytes, int stride, int width, int height, Hand hand)
         {
             int y0 = height * 70 / 100;
             int x0 = width * 32 / 100;
             int x1 = width * 68 / 100;
-            int rows = 0;
+            var bands = new List<int[]>();
             int gap = 0;
             bool open = false;
+            int bandMinY = 0;
+            int bandMaxY = 0;
+            int bandMinX = 0;
+            int bandMaxX = 0;
             for (int y = y0; y < height; y++)
             {
                 int count = 0;
@@ -195,8 +205,13 @@ namespace Blackjackas
                 {
                     if (!open)
                     {
-                        rows++;
+                        bandMinY = y;
+                        bandMinX = minX;
+                        bandMaxX = maxX;
                     }
+                    bandMaxY = y;
+                    if (minX < bandMinX) bandMinX = minX;
+                    if (maxX > bandMaxX) bandMaxX = maxX;
                     open = true;
                     gap = 0;
                 }
@@ -205,11 +220,46 @@ namespace Blackjackas
                     gap++;
                     if (gap > 2)
                     {
+                        bands.Add(new int[] { (bandMinX + bandMaxX) / 2, (bandMinY + bandMaxY) / 2, bandMaxX - bandMinX + 1 });
                         open = false;
                     }
                 }
             }
-            return rows;
+            if (open)
+            {
+                bands.Add(new int[] { (bandMinX + bandMaxX) / 2, (bandMinY + bandMaxY) / 2, bandMaxX - bandMinX + 1 });
+            }
+            int prompt = -1;
+            int promptWidth = 0;
+            for (int i = 0; i < bands.Count; i++)
+            {
+                if (bands[i][2] > promptWidth)
+                {
+                    promptWidth = bands[i][2];
+                    prompt = i;
+                }
+            }
+            var buttons = new List<int[]>();
+            for (int i = prompt + 1; i < bands.Count; i++)
+            {
+                buttons.Add(bands[i]);
+            }
+            if (buttons.Count >= 1)
+            {
+                hand.HitX = buttons[0][0];
+                hand.HitY = buttons[0][1];
+            }
+            if (buttons.Count >= 2)
+            {
+                hand.StandX = buttons[1][0];
+                hand.StandY = buttons[1][1];
+            }
+            if (buttons.Count >= 3)
+            {
+                hand.DoubleX = buttons[2][0];
+                hand.DoubleY = buttons[2][1];
+            }
+            return bands.Count;
         }
 
         static List<Circle> Circles(byte[] bytes, int stride, int width, int height)
@@ -519,11 +569,67 @@ namespace Blackjackas
             {
                 return 4;
             }
+            if ((best > 0.30 || second - best < 0.06) && gh <= 32)
+            {
+                int bigger = MatchBigger(set, width, left, top, gw, gh);
+                if (bigger >= 0)
+                {
+                    return bigger;
+                }
+            }
             if (best > 0.42)
             {
                 return -1;
             }
             if (best > 0.22 && second - best < 0.04)
+            {
+                return -1;
+            }
+            return bestDigit;
+        }
+
+        static int MatchBigger(bool[] set, int width, int left, int top, int gw, int gh)
+        {
+            int useH = gh * 2;
+            int useW = gw * 2;
+            if (useH > 64)
+            {
+                return -1;
+            }
+            var scaled = new bool[useW * useH];
+            for (int y = 0; y < gh; y++)
+            {
+                for (int x = 0; x < gw; x++)
+                {
+                    bool ink = set[(top + y) * width + left + x];
+                    scaled[(y * 2) * useW + x * 2] = ink;
+                    scaled[(y * 2) * useW + x * 2 + 1] = ink;
+                    scaled[(y * 2 + 1) * useW + x * 2] = ink;
+                    scaled[(y * 2 + 1) * useW + x * 2 + 1] = ink;
+                }
+            }
+            double best = 99;
+            int bestDigit = -1;
+            double second = 99;
+            for (int digit = 0; digit < 10; digit++)
+            {
+                double score = Score(set, width, left, top, gw, gh, scaled, useW, useH, digit);
+                if (score < best)
+                {
+                    second = best;
+                    best = score;
+                    bestDigit = digit;
+                }
+                else if (score < second)
+                {
+                    second = score;
+                }
+            }
+            if (best > 0.40)
+            {
+                return -1;
+            }
+            if (second - best < 0.03)
             {
                 return -1;
             }

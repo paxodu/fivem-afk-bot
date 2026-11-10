@@ -214,7 +214,7 @@ namespace Blackjackas
             Controls.Add(log);
             Write("Laukiu statymo arba kortų.");
 
-            clock.Interval = 220;
+            clock.Interval = 280;
             clock.Tick += delegate { Look(); };
             clock.Start();
         }
@@ -256,19 +256,76 @@ namespace Blackjackas
             }
         }
 
+        int scanning;
+
         void Look()
         {
             if (!running)
             {
                 return;
             }
+            if (Interlocked.CompareExchange(ref scanning, 1, 0) != 0)
+            {
+                return;
+            }
+            ThreadPool.QueueUserWorkItem(delegate
+            {
+                try
+                {
+                    Scan();
+                }
+                catch (Exception ex)
+                {
+                    Ui(delegate { Write("Klaida: " + ex.Message); });
+                }
+                finally
+                {
+                    Interlocked.Exchange(ref scanning, 0);
+                }
+            });
+        }
+
+        void WaitUi(Action action)
+        {
+            if (IsDisposed)
+            {
+                return;
+            }
             try
             {
-                Scan();
+                if (InvokeRequired)
+                {
+                    Invoke(action);
+                }
+                else
+                {
+                    action();
+                }
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                Write("Klaida: " + ex.Message);
+            }
+        }
+
+        void Ui(Action action)
+        {
+            if (IsDisposed)
+            {
+                return;
+            }
+            try
+            {
+                if (InvokeRequired)
+                {
+                    BeginInvoke(action);
+                }
+                else
+                {
+                    action();
+                }
+            }
+            catch (Exception)
+            {
             }
         }
 
@@ -296,7 +353,7 @@ namespace Blackjackas
             if (hand.SawCircles)
             {
                 acted = hand.OurTurn ? acted : null;
-                PlayHand(hand);
+                PlayHand(hand, area);
                 return;
             }
             acted = null;
@@ -308,7 +365,7 @@ namespace Blackjackas
                     lastTry = 0;
                     if (running)
                     {
-                        status.Text = "Laukiu stalo";
+                        Ui(delegate { status.Text = "Laukiu stalo"; });
                     }
                 }
                 return;
@@ -317,18 +374,24 @@ namespace Blackjackas
             int now = Environment.TickCount;
             if (lastTry != 0 && unchecked(now - lastTry) < 700)
             {
-                status.Text = "Statau 100";
+                Ui(delegate { status.Text = "Statau 100"; });
                 return;
             }
             FocusGame();
-            KeepOff(area.X + bet.ChipX, area.Y + bet.ChipY);
-            KeepOff(area.X + bet.ConfirmX, area.Y + bet.ConfirmY);
+            WaitUi(delegate
+            {
+                KeepOff(area.X + bet.ChipX, area.Y + bet.ChipY);
+                KeepOff(area.X + bet.ConfirmX, area.Y + bet.ConfirmY);
+            });
             bool chip = ClickAt(area.X + bet.ChipX, area.Y + bet.ChipY);
             Thread.Sleep(250);
             bool confirm = ClickAt(area.X + bet.ConfirmX, area.Y + bet.ConfirmY);
             lastTry = Environment.TickCount;
-            status.Text = "Statau 100";
-            Write("Matau statymą. Spaudžiu žetoną 100 ir Patvirtinti.");
+            Ui(delegate
+            {
+                status.Text = "Statau 100";
+                Write("Matau statymą. Spaudžiu žetoną 100 ir Patvirtinti.");
+            });
             if (!(chip && confirm) && !warnedBlocked)
             {
                 warnedBlocked = true;
@@ -336,18 +399,18 @@ namespace Blackjackas
             }
         }
 
-        void PlayHand(Hand hand)
+        void PlayHand(Hand hand, Rectangle area)
         {
             misses = 0;
             if (!hand.OurTurn)
             {
-                status.Text = hand.Player >= 2 ? "Dalintojas žaidžia" : "Matau kortas, taškai neaiškūs";
+                Ui(delegate { status.Text = hand.Player >= 2 ? "Dalintojas žaidžia" : "Matau kortas, taškai neaiškūs"; });
                 return;
             }
             string action = Play.Choose(hand.Player, hand.Dealer, hand.CanDouble);
             if (action == null)
             {
-                status.Text = "Matau kortas, taškai neaiškūs";
+                Ui(delegate { status.Text = "Matau kortas, taškai neaiškūs"; });
                 return;
             }
             string name = Play.Lithuanian(action);
@@ -355,23 +418,58 @@ namespace Blackjackas
             bool same = acted == action && actedPlayer == hand.Player && actedDealer == hand.Dealer;
             if (same && unchecked(now - actedTick) < 900)
             {
-                status.Text = name;
+                Ui(delegate { status.Text = name; });
                 return;
             }
+            int x = 0;
+            int y = 0;
+            if (action == "stand")
+            {
+                x = hand.StandX;
+                y = hand.StandY;
+            }
+            else if (action == "double" && hand.DoubleY > 0)
+            {
+                x = hand.DoubleX;
+                y = hand.DoubleY;
+            }
+            else
+            {
+                x = hand.HitX;
+                y = hand.HitY;
+            }
             FocusGame();
-            bool reached = PressAction(action);
+            bool reached = false;
+            if (x > 0 && y > 0)
+            {
+                int screenX = area.X + x;
+                int screenY = area.Y + y;
+                WaitUi(delegate { KeepOff(screenX, screenY); });
+                reached = ClickAt(screenX, screenY);
+            }
+            if (!reached)
+            {
+                reached = PressAction(action);
+            }
             acted = action;
             actedPlayer = hand.Player;
             actedDealer = hand.Dealer;
             actedTick = Environment.TickCount;
-            status.Text = name;
             string dealer = hand.Dealer >= 1 ? hand.Dealer.ToString() : "?";
-            Write("Tavo " + hand.Player + " prieš dalintojo " + dealer + ". " + name + ".");
-            if (!reached && !warnedBlocked)
+            bool blocked = !reached && !warnedBlocked;
+            if (blocked)
             {
                 warnedBlocked = true;
-                Write("Windows užblokavo klavišą. Paleisk programą kaip administratorius, jei FiveM irgi taip paleistas.");
             }
+            Ui(delegate
+            {
+                status.Text = name;
+                Write("Tavo " + hand.Player + " prieš dalintojo " + dealer + ". " + name + ".");
+                if (blocked)
+                {
+                    Write("Windows užblokavo pelę. Paleisk programą kaip administratorius, jei FiveM irgi taip paleistas.");
+                }
+            });
         }
 
         static bool PressAction(string action)
