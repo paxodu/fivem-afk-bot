@@ -2,9 +2,12 @@
 
 ## Blackjack
 
-[Blackjack.exe](https://github.com/paxodu/fivem-afk-bot/releases/download/v1.6.1/Blackjack.exe) stebi ekraną. Kai casino rodo „Pasirink savo statymą“, paspaudžia kairį žetoną **100** ir **Patvirtinti**. Dešinio **ALL-IN** neliečia. Jei langas nedingsta, bando dar kartą. Kitą statymą deda tik kai langas užsidaro ir vėl atsiranda.
+[Blackjack.exe](https://github.com/paxodu/fivem-afk-bot/releases/download/v1.6.2/Blackjack.exe) stebi ekraną ir žaidžia ranką pagal taškus po kortomis.
 
-Laimėti negarantuoja. Dalintojas stoja ant 17, blackjack moka 3:2, ir kazino vis tiek turi persvarą. Programa tik padeda pastatyti mažą statymą, kortų už tave nežaida.
+- Statymui paspaudžia kairį žetoną **100** ir **Patvirtinti**. **ALL-IN** neliečia.
+- Kai prašo veiksmą, skaito tavo ir dalintojo taškus. **17 ir daugiau — Sustoti** (tarpas). **12–16** prieš dalintojo 2–6 sustoja, prieš aukštą kortą ima (Enter). **11, 10 ir 9** dvigubina, kai tas mygtukas matosi (Shift), kitaip ima kortą.
+
+Laimėti negarantuoja. Dalintojas stoja ant 17, blackjack moka 3:2, ir kazino vis tiek turi persvarą. Programa tik pasirenka tą veiksmą, kuris pagal taškus turi didžiausią šansą. Kortų ji nekeičia.
 
 FiveM laikyk lango režimu, kad matytųsi pelė. **F7** pristabdo. Jei žaidimą leidai kaip administratorius, Blackjack paleisk taip pat. Paleidus Windows paklaus leidimo.
 

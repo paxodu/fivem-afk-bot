@@ -75,6 +75,10 @@ namespace Blackjackas
         volatile bool running = true;
         int misses;
         int lastTry;
+        int actedPlayer;
+        int actedDealer;
+        int actedTick;
+        string acted;
         bool warnedBlocked;
         IntPtr cachedGame;
         int cachedGameTick;
@@ -96,6 +100,9 @@ namespace Blackjackas
 
         [DllImport("user32.dll", SetLastError = true)]
         static extern uint SendInput(uint count, IntPtr inputs, int size);
+
+        [DllImport("user32.dll")]
+        static extern uint MapVirtualKey(uint code, uint mapType);
 
         [DllImport("user32.dll")]
         static extern IntPtr GetForegroundWindow();
@@ -169,11 +176,11 @@ namespace Blackjackas
             title.Bounds = new Rectangle(22, 16, 396, 32);
 
             var hint = new Label();
-            hint.Text = "Kai matau statymo langą, paspaudžiu kairį žetoną 100 ir Patvirtinti. ALL-IN neliečiu. Laimėti negarantuoju: dalintojas turi persvarą. FiveM laikyk lango režimu.";
+            hint.Text = "Skaitau taškus po kortomis ir spaudžiu Imti, Sustoti arba Dvigubinti. Statymui paspaudžiu žetoną 100. ALL-IN neliečiu. Laimėti negarantuoju.";
             hint.ForeColor = Color.FromArgb(176, 210, 190);
             hint.Bounds = new Rectangle(22, 52, 396, 72);
 
-            status.Text = "Laukiu statymo lango";
+            status.Text = "Laukiu stalo";
             status.ForeColor = Color.FromArgb(72, 196, 120);
             status.Font = new Font("Segoe UI", 11f, FontStyle.Bold);
             status.Bounds = new Rectangle(22, 128, 396, 28);
@@ -205,7 +212,7 @@ namespace Blackjackas
             Controls.Add(toggle);
             Controls.Add(hotkey);
             Controls.Add(log);
-            Write("Laukiu, kol pasiūlys pasirinkti statymą.");
+            Write("Laukiu statymo arba kortų.");
 
             clock.Interval = 220;
             clock.Tick += delegate { Look(); };
@@ -236,7 +243,7 @@ namespace Blackjackas
                 toggle.Text = "Stabdyti";
                 toggle.BackColor = Color.FromArgb(72, 196, 120);
                 toggle.ForeColor = Color.FromArgb(8, 28, 16);
-                status.Text = "Laukiu statymo lango";
+                status.Text = "Laukiu stalo";
                 Write("Vėl stebiu.");
             }
             else
@@ -268,6 +275,7 @@ namespace Blackjackas
         void Scan()
         {
             Rectangle area = GameArea();
+            Hand hand;
             Bet bet;
             using (var bitmap = new Bitmap(area.Width, area.Height))
             {
@@ -282,8 +290,16 @@ namespace Blackjackas
                         graphics.CopyFromScreen(area.X, area.Y, 0, 0, area.Size);
                     }
                 }
-                bet = Table.Find(bitmap);
+                hand = Play.Find(bitmap);
+                bet = hand.SawCircles ? null : Table.Find(bitmap);
             }
+            if (hand.SawCircles)
+            {
+                acted = hand.OurTurn ? acted : null;
+                PlayHand(hand);
+                return;
+            }
+            acted = null;
             if (bet == null)
             {
                 misses++;
@@ -292,7 +308,7 @@ namespace Blackjackas
                     lastTry = 0;
                     if (running)
                     {
-                        status.Text = "Laukiu statymo lango";
+                        status.Text = "Laukiu stalo";
                     }
                 }
                 return;
@@ -317,6 +333,89 @@ namespace Blackjackas
             {
                 warnedBlocked = true;
                 Write("Windows užblokavo pelę. Paleisk programą kaip administratorius, jei FiveM irgi taip paleistas.");
+            }
+        }
+
+        void PlayHand(Hand hand)
+        {
+            misses = 0;
+            if (!hand.OurTurn)
+            {
+                status.Text = hand.Player >= 2 ? "Dalintojas žaidžia" : "Matau kortas, taškai neaiškūs";
+                return;
+            }
+            string action = Play.Choose(hand.Player, hand.Dealer, hand.CanDouble);
+            if (action == null)
+            {
+                status.Text = "Matau kortas, taškai neaiškūs";
+                return;
+            }
+            string name = Play.Lithuanian(action);
+            int now = Environment.TickCount;
+            bool same = acted == action && actedPlayer == hand.Player && actedDealer == hand.Dealer;
+            if (same && unchecked(now - actedTick) < 900)
+            {
+                status.Text = name;
+                return;
+            }
+            FocusGame();
+            bool reached = PressAction(action);
+            acted = action;
+            actedPlayer = hand.Player;
+            actedDealer = hand.Dealer;
+            actedTick = Environment.TickCount;
+            status.Text = name;
+            string dealer = hand.Dealer >= 1 ? hand.Dealer.ToString() : "?";
+            Write("Tavo " + hand.Player + " prieš dalintojo " + dealer + ". " + name + ".");
+            if (!reached && !warnedBlocked)
+            {
+                warnedBlocked = true;
+                Write("Windows užblokavo klavišą. Paleisk programą kaip administratorius, jei FiveM irgi taip paleistas.");
+            }
+        }
+
+        static bool PressAction(string action)
+        {
+            uint vk = 0x0D;
+            if (action == "stand")
+            {
+                vk = 0x20;
+            }
+            else if (action == "double")
+            {
+                vk = 0xA0;
+            }
+            ushort scan = (ushort)MapVirtualKey(vk, 0);
+            if (scan == 0)
+            {
+                return false;
+            }
+            bool down = SendKey(scan, false);
+            Thread.Sleep(55);
+            bool up = SendKey(scan, true);
+            return down && up;
+        }
+
+        static bool SendKey(ushort scan, bool up)
+        {
+            bool x64 = IntPtr.Size == 8;
+            int size = x64 ? 40 : 28;
+            int at = x64 ? 8 : 4;
+            var data = new byte[size];
+            data[0] = 1;
+            data[at + 2] = (byte)(scan & 0xFF);
+            data[at + 3] = (byte)(scan >> 8);
+            int flags = up ? 10 : 8;
+            data[at + 4] = (byte)flags;
+            IntPtr raw = Marshal.AllocHGlobal(size);
+            try
+            {
+                Marshal.Copy(data, 0, raw, size);
+                return SendInput(1, raw, size) == 1;
+            }
+            finally
+            {
+                Marshal.FreeHGlobal(raw);
             }
         }
 
